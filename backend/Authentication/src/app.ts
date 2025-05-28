@@ -9,6 +9,19 @@ import { logger } from './utils/logger';
 
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'JWT_SECRET',
+  'JWT_REFRESH_SECRET',
+  'MONGODB_URI'
+];
+
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+if (missingEnvVars.length > 0) {
+  logger.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -17,7 +30,7 @@ app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://yourdomain.com', 'https://admin.yourdomain.com']
-    : ['http://localhost:3000', 'http://localhost:19006'],
+    : ['http://localhost:5001', 'http://localhost:19006'],
   credentials: true
 }));
 

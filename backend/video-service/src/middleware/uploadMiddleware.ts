@@ -1,6 +1,6 @@
 import multer from 'multer';
 import { Request, Response, NextFunction } from 'express';
-import { bucket } from '../config/firebas';
+import { bucket } from '../config/firebase';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 

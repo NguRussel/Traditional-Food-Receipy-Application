@@ -2,15 +2,16 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { logger } from '../utils/logger';
+import { AuthUser } from '../types/auth.types';
 
 interface AuthRequest extends Request {
-  user?: any;
+  user?: AuthUser;
 }
 
 export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -18,9 +19,9 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const user = await User.findById(decoded.id).select('-password -refreshTokens');
-    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || '') as any;
+    const user = await User.findById(decoded.userId).select('-password -refreshTokens');
+
     if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,

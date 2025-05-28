@@ -26,7 +26,7 @@ export class ClerkController {
         'svix-signature': svix_signature
       });
 
-      await clerkService.handleWebhook(payload.type, payload.data);
+      await clerkService.handleWebhook((payload as { type: string }).type, (payload as { data: unknown }).data);
       res.status(200).json({ success: true });
     } catch (error) {
       logger.error('Clerk webhook error:', error);

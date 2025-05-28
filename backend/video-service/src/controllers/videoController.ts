@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Video, { IVideo } from '../models/Video';
-import { bucket } from '../config/firebas';
+import { bucket } from '../config/firebase';
 
 // Upload a new video
 export const uploadVideo = async (req: Request, res: Response) => {

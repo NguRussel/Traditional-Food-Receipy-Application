@@ -49,6 +49,19 @@ export interface OTPVerificationRequest {
   otp: string;
 }
 
+// Add the missing AuthTokens interface
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    permissions: Permission[];
+    isEmailVerified: boolean;
+  };
+}
+
 export interface AuthResponse {
   success: boolean;
   message: string;

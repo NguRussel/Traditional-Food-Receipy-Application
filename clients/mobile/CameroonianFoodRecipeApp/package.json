@@ -12,6 +12,7 @@
     "expo": "~53.0.9",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
+    "react-hook-form": "^7.56.4",
     "react-native": "0.79.2"
   },
   "devDependencies": {

@@ -6,34 +6,58 @@ import { logger } from '../utils/logger';
 class ClerkService {
   async syncClerkUser(clerkUser: any) {
     try {
+      // Validate Clerk user data
+      if (!clerkUser || !clerkUser.id) {
+        throw new Error('Invalid Clerk user data: missing id');
+      }
+
+      // Get primary email if available
+      const primaryEmail = clerkUser.emailAddresses && clerkUser.emailAddresses.length > 0
+        ? clerkUser.emailAddresses[0]?.emailAddress
+        : null;
+
+      if (!primaryEmail) {
+        logger.warn(`Clerk user ${clerkUser.id} has no email addresses`);
+      }
+
       const existingUser = await User.findOne({ 
         $or: [
           { clerkId: clerkUser.id },
-          { email: clerkUser.emailAddresses[0]?.emailAddress }
+          ...(primaryEmail ? [{ email: primaryEmail }] : [])
         ]
       });
 
       if (existingUser) {
         // Update existing user with Clerk data
         existingUser.clerkId = clerkUser.id;
-        existingUser.isEmailVerified = clerkUser.emailAddresses[0]?.verification?.status === 'verified';
-        existingUser.profile.firstName = clerkUser.firstName;
-        existingUser.profile.lastName = clerkUser.lastName;
-        existingUser.profile.avatar = clerkUser.imageUrl;
+
+        if (primaryEmail) {
+          existingUser.isEmailVerified = 
+            clerkUser.emailAddresses[0]?.verification?.status === 'verified';
+        }
+
+        existingUser.profile.firstName = clerkUser.firstName || existingUser.profile.firstName;
+        existingUser.profile.lastName = clerkUser.lastName || existingUser.profile.lastName;
+        existingUser.profile.avatar = clerkUser.imageUrl || existingUser.profile.avatar;
+
         await existingUser.save();
         return existingUser;
       }
 
       // Create new user from Clerk data
+      if (!primaryEmail) {
+        throw new Error(`Cannot create user for Clerk ID ${clerkUser.id}: No email address provided`);
+      }
+
       const newUser = new User({
-        email: clerkUser.emailAddresses[0]?.emailAddress,
+        email: primaryEmail,
         clerkId: clerkUser.id,
         role: UserRole.USER,
         isEmailVerified: clerkUser.emailAddresses[0]?.verification?.status === 'verified',
         profile: {
-          firstName: clerkUser.firstName,
-          lastName: clerkUser.lastName,
-          avatar: clerkUser.imageUrl
+          firstName: clerkUser.firstName || '',
+          lastName: clerkUser.lastName || '',
+          avatar: clerkUser.imageUrl || ''
         }
       });
 

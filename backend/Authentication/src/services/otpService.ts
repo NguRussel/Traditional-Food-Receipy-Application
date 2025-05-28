@@ -8,7 +8,7 @@ class OTPService {
 
   async saveOTP(email: string, otp: string): Promise<void> {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    
+
     await User.updateOne(
       { email },
       {
@@ -35,11 +35,16 @@ class OTPService {
       return false;
     }
 
-    // Increment attempts
-    user.otp.attempts += 1;
-    await user.save();
+    // Check if OTP matches
+    const isValid = user.otp.code === otp;
 
-    return user.otp.code === otp;
+    // Only increment attempts if OTP is incorrect
+    if (!isValid) {
+      user.otp.attempts += 1;
+      await user.save();
+    }
+
+    return isValid;
   }
 }
 
