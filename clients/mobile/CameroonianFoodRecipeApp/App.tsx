@@ -4,6 +4,7 @@ import { StyleSheet,
   Platform,
  } from 'react-native';  
  import CustomInput from './src/components/CustomInput';
+import CustomButton from './src/components/CustomButton';
 
 export default function App() {
   return (
@@ -19,6 +20,12 @@ export default function App() {
       autoComplete='email' />
       <CustomInput placeholder='Password' secureTextEntry={true} />
       
+      <CustomButton 
+      text='Sign in'
+      onPress={() => {
+        console.log('pressed')
+        }}
+        />
 
       <Pressable
         onPress={() => {console.log('pressed')}}>
