@@ -6,16 +6,27 @@ import { StyleSheet,
  import CustomInput from './src/components/CustomInput';
 import CustomButton from './src/components/CustomButton';
 import {useForm} from 'react-hook-form';
+import {z} from 'zod';
+import {zodResolver} from '@hookform/resolvers/zod';
 
+const signInSchema = z.object({
+  email: z.string({message: 'Email is required'}).email('Invalid email address'),
+  password: z.string({message: 'Password is required'})
+    .min(8, 'Password must be at least 8 characters long')
+});
+
+type SignInFields = z.infer<typeof signInSchema>;
 
 export default function App() {
-  const {control, handleSubmit, formState: {errors}} = useForm({});
+  const {control, handleSubmit, formState: {errors}} = useForm({
+    resolver: zodResolver(signInSchema)
+  });
 
   console.log( errors);
   // This function will be called when the form is submitted
 
-  const onSignIn = (data: any) => {
-    console.warn('Sign In: ', data);
+  const onSignIn = (data: SignInFields) => {
+    console.warn('Sign In: ', data.email, data.password);
   };
 
   return (
