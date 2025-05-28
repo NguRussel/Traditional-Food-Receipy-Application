@@ -3,20 +3,21 @@ import { StyleSheet,
   Text, TextInput, View, TouchableOpacity, Image,Pressable, KeyboardAvoidingView,
   Platform,
  } from 'react-native';  
+ import CustomInput from './src/components/CustomInput';
 
 export default function App() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS == 'ios' ? 'padding' : 'height'} style={styles.container}>
       <Text style={styles.title}>Sign In</Text>
       
-      <TextInput 
+
+      <CustomInput 
       placeholder='Email' 
-      style={styles.input} 
-      autoFocus={true}
+      autoFocus
       autoCapitalize='none'
       keyboardType='email-address'
-      autoComplete='email'/>
-      <TextInput placeholder='Password' style={styles.input} secureTextEntry={true}/>
+      autoComplete='email' />
+      <CustomInput placeholder='Password' secureTextEntry={true} />
       
 
       <Pressable
@@ -35,12 +36,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
     gap: 10,
-  },
-  input: {
-    borderWidth: 1,
-    padding: 10,
-    borderRadius: 5,
-    borderColor: '#ccc'
   },
   buttonText: {
     color: '#fff',
