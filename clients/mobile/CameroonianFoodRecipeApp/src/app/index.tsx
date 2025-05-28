@@ -1,93 +1,33 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, 
-  Text, KeyboardAvoidingView,
-  Platform, View
- } from 'react-native';  
- import CustomInput from '@/components/CustomInput';
-import CustomButton from '@/components/CustomButton';
-import {useForm} from 'react-hook-form';
-import {z} from 'zod';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {Text, View, StyleSheet, Button} from 'react-native';
+import {Link} from 'expo-router';
+import {useAuth} from '@/hooks/useAuth';
 
-const signInSchema = z.object({
-  email: z.string({message: 'Email is required'}).email('Invalid email address'),
-  password: z.string({message: 'Password is required'})
-    .min(8, 'Password must be at least 8 characters long')
-});
-
-type SignInFields = z.infer<typeof signInSchema>;
-
-export default function App() {
-  const {control, handleSubmit, formState: {errors}} = useForm({
-    resolver: zodResolver(signInSchema)
-  });
-
-  console.log( errors);
-  // This function will be called when the form is submitted
-
-  const onSignIn = (data: SignInFields) => {
-    console.warn('Sign In: ', data.email, data.password);
-  };
+export default function WelcomeScreen() {
+  const { signOut, isSignedIn } = useAuth();
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS == 'ios' ? 'padding' : 'height'} style={styles.container}>
-      <Text style={styles.title}>Sign In</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Welcome screen</Text>
 
-    
-      
-      <View style={styles.form}>
+      <Text>{isSignedIn ? 'Authenticated' : 'Not authenticated'}</Text>
+      <Button title='Sign out' onPress={() => signOut()} />
 
-      <CustomInput 
-      control={control}
-      name='email'
-      placeholder='Email' 
-      autoFocus
-      autoCapitalize='none'
-      keyboardType='email-address'
-      autoComplete='email' />
+      <Link href='/sign-in'>Go to sign in</Link>
 
-      <CustomInput
-      control={control}
-      name='password'
-      placeholder='Password'
-      secureTextEntry/>
-      </View>
-      <CustomButton 
-      text='Sign in' onPress={handleSubmit(onSignIn)}/>
-
-      <StatusBar style="auto" />
-    </KeyboardAvoidingView>
+      <Link href='/(protected)'>Go to Protected Screens</Link>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     justifyContent: 'center',
-    padding: 20,
-    gap: 10,
-  },
-  form: {
-    gap: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    backgroundColor: '#007BFF',
-    padding: 10,
-    textAlign: 'center',
-    borderRadius: 5,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  button: {
-    backgroundColor: '#4353FD',
-    padding: 15,
-    borderRadius: 5,
     alignItems: 'center',
+    gap: 20,
   },
   title: {
     fontSize: 24,
-    fontWeight: '600',
-  }
+    fontWeight: 'bold',
+  },
 });
