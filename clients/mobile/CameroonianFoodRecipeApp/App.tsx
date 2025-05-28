@@ -1,9 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, TextInput, View, TouchableOpacity, Image,Pressable } from 'react-native';  
+import { StyleSheet, 
+  Text, TextInput, View, TouchableOpacity, Image,Pressable, KeyboardAvoidingView,
+  Platform,
+ } from 'react-native';  
 
 export default function App() {
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView behavior={Platform.OS == 'ios' ? 'padding' : 'height'} style={styles.container}>
       <Text style={styles.title}>Sign In</Text>
       <TextInput placeholder='Email' style={styles.input}/>
       <TextInput placeholder='Password' style={styles.input} secureTextEntry={true}/>
@@ -13,7 +16,7 @@ export default function App() {
         <Text style={styles.buttonText}>Sign in</Text>
         </Pressable>
       <StatusBar style="auto" />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -21,7 +24,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     padding: 20,
     gap: 10,
   },
