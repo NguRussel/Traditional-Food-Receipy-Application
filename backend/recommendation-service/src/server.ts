@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import recommendationRoutes from './routes/recommendationRoutes';
 import { AuthError, IAuthRequest } from './middleware/authMiddleware'; // Import AuthError and IAuthRequest
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swaggerConfig';
 
 dotenv.config();
 
@@ -34,6 +36,9 @@ app.get('/', (req: Request, res: Response) => {
 
 // Recommendation Routes
 app.use('/api/v1/recommendations', recommendationRoutes);
+
+// Swagger UI setup
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Global Error Handler
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
