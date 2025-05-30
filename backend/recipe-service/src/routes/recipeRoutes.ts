@@ -19,6 +19,7 @@ import {
 import { protect, authorize, IAuthRequest } from '../middleware/authMiddleware'; // Import auth middleware
 import { 
   validateCreateRecipe, 
+  validateUpdateRecipe,
   handleValidationErrors, 
   validateMongoIdParam 
 } from '../middleware/validationMiddleware'; // Import validation middleware
@@ -79,7 +80,7 @@ router.route('/:id')
     protect, 
     authorize('chef', 'admin'), 
     validateMongoIdParam(), // Validate :id parameter
-    // TODO: Add validateUpdateRecipe rules here (can be a subset of create, or different)
+    validateUpdateRecipe, // Apply update validation rules
     handleValidationErrors, 
     updateRecipe
   )
