@@ -165,11 +165,43 @@ export const updateReview = asyncHandler(async (req: Request, res: Response) => 
 // @route   DELETE /api/v1/reviews/:id
 // @access  Private (User must own the review or be an Admin)
 export const deleteReview = asyncHandler(async (req: Request, res: Response) => {
-  // const { id } = req.params;
-  // const userId = (req as IAuthRequest).user.id;
-  // const userRoles = (req as IAuthRequest).user.roles;
-  // Logic to delete a review, ensuring user owns it or is an admin
-  res.status(200).json({ message: `DELETE /api/v1/reviews/${req.params.id} - Placeholder for deleteReview` });
+  const { id } = req.params;
+  const { requestingUserId, requestingUserRoles } = req.body; // Expect these for now
+
+  if (!Types.ObjectId.isValid(id)) {
+    throw new CustomError('Invalid review ID format.', 400);
+  }
+
+  // Later, these will come from (req as IAuthRequest).user
+  if (!requestingUserId || !Types.ObjectId.isValid(requestingUserId)) {
+    throw new CustomError('Valid requestingUserId is required in the body for this operation.', 400);
+  }
+  if (!requestingUserRoles || !Array.isArray(requestingUserRoles)) {
+    throw new CustomError('requestingUserRoles (array) is required in the body for this operation.', 400);
+  }
+
+  const review = await ReviewModel.findById(id);
+
+  if (!review) {
+    throw new CustomError('Review not found.', 404);
+  }
+
+  // Authorization check
+  const isAdmin = requestingUserRoles.includes('admin');
+  const isOwner = review.userId.toString() === requestingUserId;
+
+  if (!isAdmin && !isOwner) {
+    throw new CustomError('Not authorized to delete this review.', 403); // Forbidden
+  }
+
+  await ReviewModel.findByIdAndDelete(id);
+  // Or using the instance: await review.deleteOne(); if you prefer that style after fetching
+
+  res.status(200).json({ 
+    success: true, 
+    message: 'Review deleted successfully',
+    data: {} // Or return the deleted review if needed, but usually not for DELETE
+  });
 });
 
 // @desc    Get all reviews by a specific user
