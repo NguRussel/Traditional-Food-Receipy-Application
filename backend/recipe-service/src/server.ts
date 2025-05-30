@@ -2,6 +2,8 @@ import express, { Express, Request, Response, NextFunction, ErrorRequestHandler 
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { AuthError } from './middleware/authMiddleware'; // Import AuthError
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swaggerConfig'; // Import the generated spec
 
 dotenv.config();
 
@@ -25,6 +27,9 @@ mongoose.connect(mongoUri)
     console.error('MongoDB connection error:', err);
     process.exit(1); // Exit process with failure
   });
+
+// Swagger UI Setup
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Basic Route
 app.get('/', (req: Request, res: Response) => {
