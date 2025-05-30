@@ -3,32 +3,29 @@ import asyncHandler from '../utils/asyncHandler';
 import ReviewModel, { IReview } from '../models/Review';
 import { Types } from 'mongoose'; // Import Types for ObjectId validation/casting
 import CustomError from '../utils/CustomError';
-// import { IAuthRequest } from '../middleware/authMiddleware'; // Will be needed later for auth
+import { IAuthRequest } from '../middleware/authMiddleware'; // Import IAuthRequest
 
 // @desc    Create a new review
 // @route   POST /api/v1/reviews
 // @access  Private (User must be authenticated)
-export const createReview = asyncHandler(async (req: Request, res: Response) => {
-  const { recipeId, userId, rating, comment } = req.body;
+export const createReview = asyncHandler(async (req: IAuthRequest, res: Response) => {
+  const { recipeId, rating, comment } = req.body;
+  const userId = req.user!.id; // userId from authenticated user
 
   // Basic validation (more robust validation will be done by middleware later)
-  if (!recipeId || !userId || !rating) {
-    throw new CustomError('Missing required fields: recipeId, userId, and rating are required.', 400);
+  if (!recipeId || !rating) { // userId is now from token, not body
+    throw new CustomError('Missing required fields: recipeId and rating are required.', 400);
   }
   if (!Types.ObjectId.isValid(recipeId)) {
     throw new CustomError('Invalid recipeId format.', 400);
-  }
-  if (!Types.ObjectId.isValid(userId)) {
-    throw new CustomError('Invalid userId format.', 400);
   }
   if (typeof rating !== 'number' || rating < 1 || rating > 5) {
     throw new CustomError('Rating must be a number between 1 and 5.', 400);
   }
 
-  // For now, userId comes from req.body. Later, it will be from (req as IAuthRequest).user.id;
   const reviewData: Partial<IReview> = {
     recipeId: new Types.ObjectId(recipeId),
-    userId: new Types.ObjectId(userId),
+    userId: new Types.ObjectId(userId), // Use authenticated userId
     rating,
   };
   if (comment) {
@@ -110,16 +107,13 @@ export const getReviewById = asyncHandler(async (req: Request, res: Response) =>
 // @desc    Update a review
 // @route   PUT /api/v1/reviews/:id
 // @access  Private (User must own the review)
-export const updateReview = asyncHandler(async (req: Request, res: Response) => {
+export const updateReview = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { id } = req.params;
-  const { rating, comment, requestingUserId } = req.body; // Expect requestingUserId for now
+  const { rating, comment } = req.body;
+  const requestingUserId = req.user!.id; // userId from authenticated user
 
   if (!Types.ObjectId.isValid(id)) {
     throw new CustomError('Invalid review ID format.', 400);
-  }
-  // Later, when auth is in place, requestingUserId will be (req as IAuthRequest).user.id
-  if (!requestingUserId || !Types.ObjectId.isValid(requestingUserId)) {
-    throw new CustomError('Valid requestingUserId is required in the body for this operation.', 400);
   }
 
   // Validate rating and comment if provided
@@ -164,20 +158,13 @@ export const updateReview = asyncHandler(async (req: Request, res: Response) => 
 // @desc    Delete a review
 // @route   DELETE /api/v1/reviews/:id
 // @access  Private (User must own the review or be an Admin)
-export const deleteReview = asyncHandler(async (req: Request, res: Response) => {
+export const deleteReview = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { id } = req.params;
-  const { requestingUserId, requestingUserRoles } = req.body; // Expect these for now
+  const requestingUserId = req.user!.id; // userId from authenticated user
+  const requestingUserRoles = req.user!.roles; // roles from authenticated user
 
   if (!Types.ObjectId.isValid(id)) {
     throw new CustomError('Invalid review ID format.', 400);
-  }
-
-  // Later, these will come from (req as IAuthRequest).user
-  if (!requestingUserId || !Types.ObjectId.isValid(requestingUserId)) {
-    throw new CustomError('Valid requestingUserId is required in the body for this operation.', 400);
-  }
-  if (!requestingUserRoles || !Array.isArray(requestingUserRoles)) {
-    throw new CustomError('requestingUserRoles (array) is required in the body for this operation.', 400);
   }
 
   const review = await ReviewModel.findById(id);
