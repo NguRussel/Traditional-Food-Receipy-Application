@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+README.md
+coverage/
+dist/
+.env
+*.env
+src/
+!dist/ # We need the built files from the builder stage, but not the src for prod 
