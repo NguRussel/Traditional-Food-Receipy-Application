@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { body, param, validationResult, ValidationChain } from 'express-validator';
+import { body, param, query, validationResult, ValidationChain } from 'express-validator';
 
 // Middleware to handle validation errors from express-validator
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction): void => {
@@ -48,4 +48,18 @@ export const validateTrackInteraction: ValidationChain[] = [
 export const validateMongoIdParam = (paramName: string = 'id'): ValidationChain => {
   return param(paramName)
     .isMongoId().withMessage(`Parameter :${paramName} must be a valid MongoDB ObjectId`);
-}; 
+};
+
+// Validation for the 'ingredients' query parameter
+export const validateIngredientsQueryParam: ValidationChain[] = [
+  query('ingredients')
+    .notEmpty().withMessage('Ingredients query parameter is required and cannot be empty.')
+    .isString().withMessage('Ingredients must be a comma-separated string.')
+    .custom((value: string) => {
+      const ingredients = value.split(',').map(ing => ing.trim()).filter(ing => ing);
+      if (ingredients.length === 0) {
+        throw new Error('Please provide at least one valid ingredient.');
+      }
+      return true;
+    })
+]; 

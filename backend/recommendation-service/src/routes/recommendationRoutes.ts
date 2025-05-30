@@ -3,12 +3,14 @@ import {
   trackInteraction, 
   getForYouRecommendations, 
   getSimilarRecipes,
-  getTrendingRecipes
+  getTrendingRecipes,
+  getRecipesByIngredients
 } from '../controllers/interactionController';
 import {
   validateTrackInteraction, 
   handleValidationErrors,
-  validateMongoIdParam
+  validateMongoIdParam,
+  validateIngredientsQueryParam
 } from '../middleware/validationMiddleware';
 
 // We will add validation middleware later
@@ -58,9 +60,18 @@ router.get(
     getTrendingRecipes
 );
 
-// Other recommendation routes will be added here:
-// GET /trending
 // GET /based-on-ingredients
+// @desc    Get recipe suggestions based on ingredients
+// @route   GET /api/v1/recommendations/based-on-ingredients
+// @access  Public
+router.get(
+    '/based-on-ingredients',
+    validateIngredientsQueryParam,
+    handleValidationErrors,
+    getRecipesByIngredients
+);
+
+// Other recommendation routes will be added here:
 // GET /user-taste-profile
 
 // Admin routes for recommendations could be separate or have admin middleware here

@@ -251,4 +251,50 @@ export const getTrendingRecipes = asyncHandler(async (req: Request, res: Respons
     count: trendingRecipes.length,
     data: trendingRecipes,
   });
+});
+
+/**
+ * @desc    Get recipe suggestions based on a list of ingredients
+ * @route   GET /api/v1/recommendations/based-on-ingredients
+ * @access  Public
+ */
+export const getRecipesByIngredients = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const ingredientsQuery = req.query.ingredients as string;
+
+  if (!ingredientsQuery) {
+    res.status(400).json({ success: false, message: 'Please provide a list of ingredients as a query parameter (e.g., ingredients=tomatoes,onions,garlic)' });
+    return;
+  }
+
+  const providedIngredients = ingredientsQuery.split(',').map(ing => ing.trim().toLowerCase()).filter(ing => ing);
+
+  if (providedIngredients.length === 0) {
+    res.status(400).json({ success: false, message: 'No valid ingredients provided in the query.' });
+    return;
+  }
+
+  // --- Highly Placeholder Logic --- 
+  // In a real system, you would:
+  // 1. Parse and normalize the provided ingredients.
+  // 2. Query your Recipe database/service for recipes that contain these ingredients.
+  //    - This might involve partial matches, matching all ingredients, or matching some.
+  //    - Ranking would be based on how many ingredients match, popularity, etc.
+  // 3. Return a list of matching recipe IDs (and then their details).
+
+  // For this placeholder, we'll just acknowledge the ingredients and return a mock response.
+  const mockRecipeSuggestions = [
+    { recipeId: 'mockRecipeId1', name: 'Suggested Recipe 1 (Placeholder)', matchedIngredients: providedIngredients.slice(0,1) },
+    { recipeId: 'mockRecipeId2', name: 'Suggested Recipe 2 (Placeholder)', matchedIngredients: providedIngredients.slice(0,2) },
+  ];
+  
+  // Simulate finding some recipes if at least one ingredient was given
+  const recipesToReturn = providedIngredients.length > 0 ? mockRecipeSuggestions : [];
+
+  res.status(200).json({
+    success: true,
+    message: `Placeholder: Recipes based on ingredients: ${providedIngredients.join(', ')}. Full implementation requires recipe data access.`,
+    providedIngredients: providedIngredients,
+    count: recipesToReturn.length,
+    data: recipesToReturn,
+  });
 }); 
