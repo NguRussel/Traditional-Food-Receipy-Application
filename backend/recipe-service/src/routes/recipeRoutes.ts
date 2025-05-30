@@ -20,8 +20,11 @@ import { protect, authorize, IAuthRequest } from '../middleware/authMiddleware';
 import { 
   validateCreateRecipe, 
   validateUpdateRecipe,
+  validateRejectRecipe,
   handleValidationErrors, 
-  validateMongoIdParam 
+  validateMongoIdParam,
+  validateSearchRecipesQuery,
+  validatePathParameter
 } from '../middleware/validationMiddleware'; // Import validation middleware
 
 // TODO: Add authentication and authorization middleware
@@ -29,8 +32,12 @@ import {
 
 const router = express.Router();
 
-// Search Route (should be defined before routes with /:id)
-router.get('/search', searchRecipes);
+// Search Route
+router.get('/search', 
+  validateSearchRecipesQuery,
+  handleValidationErrors, 
+  searchRecipes
+);
 
 // Get popular recipes
 router.get('/popular', getPopularRecipes);
@@ -47,14 +54,17 @@ router.get('/chef/:chefId',
 
 // Get recipes by category, region, tribe
 router.get('/category/:category', 
+  validatePathParameter('category'),
   handleValidationErrors,
   getRecipesByCategory
 );
 router.get('/region/:region', 
+  validatePathParameter('region'),
   handleValidationErrors,
   getRecipesByRegion
 );
 router.get('/tribe/:tribe', 
+  validatePathParameter('tribe'),
   handleValidationErrors,
   getRecipesByTribe
 );

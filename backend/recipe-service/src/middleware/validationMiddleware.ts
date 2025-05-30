@@ -81,6 +81,32 @@ export const validateRejectRecipe: ValidationChain[] = [
   body('moderationNotes').notEmpty().withMessage('Moderation notes are required for rejection').trim().isString(),
 ];
 
+// Validation rules for search recipes query parameters
+export const validateSearchRecipesQuery: ValidationChain[] = [
+  query('q').optional().isString().trim().withMessage('Search query (q) must be a string'),
+  query('region').optional().isString().trim().notEmpty().withMessage('Region filter cannot be empty if provided'),
+  query('category').optional().isString().trim().notEmpty().withMessage('Category filter cannot be empty if provided'),
+  query('tribe').optional().isString().trim().notEmpty().withMessage('Tribe filter cannot be empty if provided'),
+  query('difficulty').optional().isIn(['Easy', 'Medium', 'Hard']).withMessage('Difficulty must be Easy, Medium, or Hard'),
+  query('minCookingTime').optional().isInt({ min: 0 }).withMessage('Min cooking time must be a non-negative integer'),
+  query('maxCookingTime').optional().isInt({ min: 0 }).withMessage('Max cooking time must be a non-negative integer')
+    .custom((value, { req }) => {
+      if (req.query?.minCookingTime && value < req.query.minCookingTime) {
+        throw new Error('Max cooking time must be greater than or equal to min cooking time');
+      }
+      return true;
+    }),
+  query('servings').optional().isInt({ min: 1 }).withMessage('Servings must be a positive integer'),
+  query('ingredients').optional().isString().trim().notEmpty().withMessage('Ingredients filter (comma-separated string) cannot be empty if provided'),
+  query('page').optional().isInt({ min: 1 }).withMessage('Page number must be a positive integer'),
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be an integer between 1 and 100'),
+];
+
+// Validation rules for path parameters like :category, :region, :tribe
+export const validatePathParameter = (paramName: string): ValidationChain => {
+  return param(paramName).notEmpty().withMessage(`${paramName} cannot be empty`).trim().isString().withMessage(`${paramName} must be a string`);
+};
+
 // Reusable MongoDB ID validation for URL parameters
 export const validateMongoIdParam = (paramName: string = 'id'): ValidationChain => {
     return param(paramName).isMongoId().withMessage(`Invalid ${paramName} format in URL parameter`);
