@@ -17,6 +17,11 @@ import {
   // Admin controllers are now in adminRecipeRoutes.ts
 } from '../controllers/recipeController';
 import { protect, authorize, IAuthRequest } from '../middleware/authMiddleware'; // Import auth middleware
+import { 
+  validateCreateRecipe, 
+  handleValidationErrors, 
+  validateMongoIdParam 
+} from '../middleware/validationMiddleware'; // Import validation middleware
 
 // TODO: Add authentication and authorization middleware
 // import { protect, authorize } from '../middleware/authMiddleware'; // Example
@@ -33,27 +38,71 @@ router.get('/popular', getPopularRecipes);
 router.get('/recent', getRecentRecipes);
 
 // Get recipes by Chef
-router.get('/chef/:chefId', getRecipesByChef);
+router.get('/chef/:chefId', 
+  validateMongoIdParam('chefId'), // Specific param name
+  handleValidationErrors, 
+  getRecipesByChef
+);
 
 // Get recipes by category, region, tribe
-router.get('/category/:category', getRecipesByCategory);
-router.get('/region/:region', getRecipesByRegion);
-router.get('/tribe/:tribe', getRecipesByTribe);
+router.get('/category/:category', 
+  handleValidationErrors,
+  getRecipesByCategory
+);
+router.get('/region/:region', 
+  handleValidationErrors,
+  getRecipesByRegion
+);
+router.get('/tribe/:tribe', 
+  handleValidationErrors,
+  getRecipesByTribe
+);
 
 // CRUD Operations
 router.route('/')
-  .post(protect, authorize('chef'), createRecipe) // Apply protect and authorize
+  .post(
+    protect, 
+    authorize('chef'), 
+    validateCreateRecipe, // Add validation rules
+    handleValidationErrors, // Add error handler for validation
+    createRecipe
+  )
   .get(getAllRecipes);
 
 router.route('/:id')
-  .get(getRecipeById)
-  .put(protect, authorize('chef', 'admin'), updateRecipe) // Apply protect and authorize
-  .delete(protect, authorize('chef', 'admin'), deleteRecipe); // Apply protect and authorize
+  .get(
+    validateMongoIdParam(), // Validate :id parameter
+    handleValidationErrors,
+    getRecipeById
+  )
+  .put(
+    protect, 
+    authorize('chef', 'admin'), 
+    validateMongoIdParam(), // Validate :id parameter
+    // TODO: Add validateUpdateRecipe rules here (can be a subset of create, or different)
+    handleValidationErrors, 
+    updateRecipe
+  )
+  .delete(
+    protect, 
+    authorize('chef', 'admin'), 
+    validateMongoIdParam(), // Validate :id parameter
+    handleValidationErrors, 
+    deleteRecipe
+  );
 
 // Track recipe view
-router.post('/:id/view', trackRecipeView);
+router.post('/:id/view', 
+  validateMongoIdParam(), 
+  handleValidationErrors, 
+  trackRecipeView
+);
 
 // Get related recipes
-router.get('/:id/related', getRelatedRecipes);
+router.get('/:id/related', 
+  validateMongoIdParam(), 
+  handleValidationErrors, 
+  getRelatedRecipes
+);
 
 export default router; 
