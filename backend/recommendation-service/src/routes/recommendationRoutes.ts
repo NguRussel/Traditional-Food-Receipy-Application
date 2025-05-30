@@ -2,7 +2,8 @@ import express from 'express';
 import {
   trackInteraction, 
   getForYouRecommendations, 
-  getSimilarRecipes 
+  getSimilarRecipes,
+  getTrendingRecipes
 } from '../controllers/interactionController';
 import {
   validateTrackInteraction, 
@@ -46,6 +47,15 @@ router.get(
     validateMongoIdParam('recipeId'), // Validate the recipeId URL parameter
     handleValidationErrors,
     getSimilarRecipes
+);
+
+// GET /trending
+// @desc    Get trending recipes
+// @route   GET /api/v1/recommendations/trending
+// @access  Public
+router.get(
+    '/trending',
+    getTrendingRecipes
 );
 
 // Other recommendation routes will be added here:

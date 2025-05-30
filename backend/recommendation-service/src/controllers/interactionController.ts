@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import UserInteractionModel, { IUserInteraction } from '../models/UserInteraction';
+import { PipelineStage } from 'mongoose';
 
 // Utility for handling async route handlers and catching errors
 const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => 
@@ -183,5 +184,71 @@ export const getSimilarRecipes = asyncHandler(async (req: Request, res: Response
     message: 'Similar recipes retrieved (placeholder logic based on user interactions)',
     count: similarRecipes.length,
     data: similarRecipes,
+  });
+});
+
+/**
+ * @desc    Get trending recipes based on recent positive interactions
+ * @route   GET /api/v1/recommendations/trending
+ * @access  Public
+ */
+export const getTrendingRecipes = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  // Define what a "recent" period is (e.g., last 7 days)
+  const recentDays = 7;
+  const sinceDate = new Date();
+  sinceDate.setDate(sinceDate.getDate() - recentDays);
+
+  // --- Placeholder Logic for Trending --- 
+  // 1. Aggregate positive interactions recently.
+  // We can assign weights to different interaction types if desired.
+  // For simplicity, we'll count 'like', 'save', 'cook', and high 'rating' as 1 point each.
+
+  const trendingPipeline: PipelineStage[] = [
+    {
+      $match: {
+        createdAt: { $gte: sinceDate },
+        $or: [
+          { interactionType: { $in: ['like', 'save', 'cook'] } },
+          { interactionType: 'rating', rating: { $gte: 4 } }
+        ]
+      }
+    },
+    {
+      $group: {
+        _id: '$recipeId',
+        trendScore: { $sum: 1 } // Each positive interaction contributes 1 to the score
+      }
+    },
+    {
+      $sort: { trendScore: -1 } // Sort by the highest score
+    },
+    {
+      $limit: 10 // Get top N trending recipes
+    }
+  ];
+
+  const trendingRecipeIds = await UserInteractionModel.aggregate(trendingPipeline);
+
+  if (!trendingRecipeIds || trendingRecipeIds.length === 0) {
+    res.status(200).json({ 
+      success: true, 
+      message: 'No trending recipes found based on recent activity.', 
+      data: [] 
+    });
+    return;
+  }
+
+  // 2. In a real system, fetch full recipe details for these IDs from RecipeService.
+  const trendingRecipes = trendingRecipeIds.map(item => ({
+    recipeId: item._id, // _id from the $group stage is the recipeId
+    trendScore: item.trendScore,
+    // Placeholder: Fetch actual recipe data here
+  }));
+
+  res.status(200).json({
+    success: true,
+    message: 'Trending recipes retrieved (placeholder logic)',
+    count: trendingRecipes.length,
+    data: trendingRecipes,
   });
 }); 
