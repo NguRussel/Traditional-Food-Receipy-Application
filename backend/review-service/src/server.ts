@@ -8,20 +8,14 @@ import CustomError from './utils/CustomError'; // Import CustomError
 dotenv.config();
 
 const app: Express = express();
-const PORT: string | number = process.env.REVIEW_SERVICE_PORT || 8002;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/review_service_db';
+const PORT = process.env.REVIEW_SERVICE_PORT || 8004;
 
 // Middleware
 app.use(express.json());
 
 // MongoDB Connection
-const mongoUri = process.env.MONGODB_URI;
-
-if (!mongoUri) {
-  console.error('MongoDB URI not found in .env file for Review-Service');
-  process.exit(1);
-}
-
-mongoose.connect(mongoUri)
+mongoose.connect(MONGODB_URI)
   .then(() => console.log('MongoDB connected successfully to Review-Service'))
   .catch(err => {
     console.error('MongoDB connection error:', err);

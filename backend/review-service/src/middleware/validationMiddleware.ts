@@ -5,7 +5,8 @@ import { body, param, query, validationResult, ValidationChain } from 'express-v
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
+    res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
+    return; // Explicitly return to satisfy void return type for this path
   }
   next();
 };
