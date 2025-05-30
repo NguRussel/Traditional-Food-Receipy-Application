@@ -289,4 +289,100 @@ export const getRecentRecipes = asyncHandler(async (req: Request, res: Response,
     currentPage: pageNumber,
     data: recipes,
   });
+});
+
+// @desc    Get recipes by category
+// @route   GET /api/v1/recipes/category/:category
+// @access  Public
+export const getRecipesByCategory = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { category } = req.params;
+  const { page = 1, limit = 10 } = req.query;
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const query: any = { 
+    'tags.categories': category, // Assumes 'categories' is an array in tags
+    status: 'approved', 
+    isActive: true 
+  };
+
+  const recipes = await RecipeModel.find(query)
+                            .populate('chefId', 'name avatar')
+                            .sort({ createdAt: -1 })
+                            .skip(skip)
+                            .limit(limitNumber);
+  const totalRecipes = await RecipeModel.countDocuments(query);
+
+  res.status(200).json({
+    success: true,
+    count: recipes.length,
+    totalPages: Math.ceil(totalRecipes / limitNumber),
+    currentPage: pageNumber,
+    data: recipes,
+  });
+});
+
+// @desc    Get recipes by region
+// @route   GET /api/v1/recipes/region/:region
+// @access  Public
+export const getRecipesByRegion = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { region } = req.params;
+  const { page = 1, limit = 10 } = req.query;
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const query: any = { 
+    'tags.region': region, 
+    status: 'approved', 
+    isActive: true 
+  };
+
+  const recipes = await RecipeModel.find(query)
+                            .populate('chefId', 'name avatar')
+                            .sort({ createdAt: -1 })
+                            .skip(skip)
+                            .limit(limitNumber);
+  const totalRecipes = await RecipeModel.countDocuments(query);
+
+  res.status(200).json({
+    success: true,
+    count: recipes.length,
+    totalPages: Math.ceil(totalRecipes / limitNumber),
+    currentPage: pageNumber,
+    data: recipes,
+  });
+});
+
+// @desc    Get recipes by tribe
+// @route   GET /api/v1/recipes/tribe/:tribe
+// @access  Public
+export const getRecipesByTribe = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { tribe } = req.params;
+  const { page = 1, limit = 10 } = req.query;
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const query: any = { 
+    'tags.tribe': tribe, 
+    status: 'approved', 
+    isActive: true 
+  };
+
+  const recipes = await RecipeModel.find(query)
+                            .populate('chefId', 'name avatar')
+                            .sort({ createdAt: -1 })
+                            .skip(skip)
+                            .limit(limitNumber);
+  const totalRecipes = await RecipeModel.countDocuments(query);
+
+  res.status(200).json({
+    success: true,
+    count: recipes.length,
+    totalPages: Math.ceil(totalRecipes / limitNumber),
+    currentPage: pageNumber,
+    data: recipes,
+  });
 }); 

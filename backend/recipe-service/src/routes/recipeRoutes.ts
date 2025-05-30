@@ -9,6 +9,9 @@ import {
   getRecipesByChef,
   getPopularRecipes,
   getRecentRecipes,
+  getRecipesByCategory,
+  getRecipesByRegion,
+  getRecipesByTribe,
 } from '../controllers/recipeController';
 
 // TODO: Add authentication and authorization middleware
@@ -27,6 +30,11 @@ router.get('/recent', getRecentRecipes);
 
 // Get recipes by Chef
 router.get('/chef/:chefId', getRecipesByChef);
+
+// Get recipes by category, region, tribe
+router.get('/category/:category', getRecipesByCategory);
+router.get('/region/:region', getRecipesByRegion);
+router.get('/tribe/:tribe', getRecipesByTribe);
 
 // CRUD Operations
 router.route('/')
