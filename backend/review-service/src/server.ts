@@ -1,7 +1,7 @@
 import express, { Express, Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-// import reviewRoutes from './routes/reviewRoutes'; // Will be added later
+import reviewRoutes from './routes/reviewRoutes'; // Will be added later
 // import { AuthError } from './middleware/authMiddleware'; // Will be added later
 
 dotenv.config();
@@ -33,7 +33,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // Review Routes (will be uncommented and used later)
-// app.use('/api/v1/reviews', reviewRoutes);
+app.use('/api/v1/reviews', reviewRoutes);
 
 // Global Error Handler
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
