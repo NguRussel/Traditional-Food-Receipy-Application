@@ -111,11 +111,54 @@ export const getReviewById = asyncHandler(async (req: Request, res: Response) =>
 // @route   PUT /api/v1/reviews/:id
 // @access  Private (User must own the review)
 export const updateReview = asyncHandler(async (req: Request, res: Response) => {
-  // const { id } = req.params;
-  // const { rating, comment } = req.body;
-  // const userId = (req as IAuthRequest).user.id;
-  // Logic to update a review, ensuring user owns it
-  res.status(200).json({ message: `PUT /api/v1/reviews/${req.params.id} - Placeholder for updateReview` });
+  const { id } = req.params;
+  const { rating, comment, requestingUserId } = req.body; // Expect requestingUserId for now
+
+  if (!Types.ObjectId.isValid(id)) {
+    throw new CustomError('Invalid review ID format.', 400);
+  }
+  // Later, when auth is in place, requestingUserId will be (req as IAuthRequest).user.id
+  if (!requestingUserId || !Types.ObjectId.isValid(requestingUserId)) {
+    throw new CustomError('Valid requestingUserId is required in the body for this operation.', 400);
+  }
+
+  // Validate rating and comment if provided
+  if (rating !== undefined && (typeof rating !== 'number' || rating < 1 || rating > 5)) {
+    throw new CustomError('Rating must be a number between 1 and 5.', 400);
+  }
+  if (comment !== undefined && typeof comment !== 'string') {
+    throw new CustomError('Comment must be a string.', 400);
+  }
+  if (rating === undefined && comment === undefined) {
+    throw new CustomError('No fields to update. Provide rating and/or comment.', 400);
+  }
+
+  const review = await ReviewModel.findById(id);
+
+  if (!review) {
+    throw new CustomError('Review not found.', 404);
+  }
+
+  // Authorization: Check if the requesting user is the one who wrote the review
+  if (review.userId.toString() !== requestingUserId) {
+    throw new CustomError('Not authorized to update this review.', 403); // Forbidden
+  }
+
+  // Update fields if provided
+  if (rating !== undefined) {
+    review.rating = rating;
+  }
+  if (comment !== undefined) {
+    review.comment = comment;
+  }
+
+  const updatedReview = await review.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Review updated successfully',
+    data: updatedReview,
+  });
 });
 
 // @desc    Delete a review
