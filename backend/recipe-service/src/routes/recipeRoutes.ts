@@ -20,7 +20,6 @@ import { protect, authorize, IAuthRequest } from '../middleware/authMiddleware';
 import { 
   validateCreateRecipe, 
   validateUpdateRecipe,
-  validateRejectRecipe,
   handleValidationErrors, 
   validateMongoIdParam,
   validateSearchRecipesQuery,
@@ -473,57 +472,47 @@ router.delete(
  *         in: query
  *         required: false
  *         description: Search query string (searches name, description, tags.ingredients).
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *       - name: region
  *         in: query
  *         required: false
  *         description: Filter by region (e.g., Littoral, West).
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *       - name: category
  *         in: query
  *         required: false
  *         description: Filter by category (e.g., main course, dessert).
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *       - name: tribe
  *         in: query
  *         required: false
  *         description: Filter by tribe (e.g., Bamileke, Bassa).
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *       - name: difficulty
  *         in: query
  *         required: false
  *         description: Filter by difficulty level.
- *         schema:
- *           type: string
- *           enum: [Easy, Medium, Hard]
+ *         schema: { type: string, enum: [Easy, Medium, Hard] }
  *       - name: minCookingTime
  *         in: query
  *         required: false
  *         description: Minimum cooking time in minutes.
- *         schema:
- *           type: integer
+ *         schema: { type: integer }
  *       - name: maxCookingTime
  *         in: query
  *         required: false
  *         description: Maximum cooking time in minutes.
- *         schema:
- *           type: integer
+ *         schema: { type: integer }
  *       - name: servings
  *         in: query
  *         required: false
  *         description: Filter by number of servings.
- *         schema:
- *           type: integer
- *       - name: ingredients # Matches tags.ingredients
+ *         schema: { type: integer }
+ *       - name: ingredients
  *         in: query
  *         required: false
  *         description: Filter by ingredients (comma-separated list, e.g., bitterleaf,beef).
- *         schema:
- *           type: string 
+ *         schema: { type: string }
  *       - $ref: '#/components/parameters/PageQueryParam'
  *       - $ref: '#/components/parameters/LimitQueryParam'
  *     responses:
@@ -535,26 +524,24 @@ router.delete(
  *               type: object
  *               properties:
  *                 success: { type: boolean, example: true }
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Recipe'
- *                 pagination:
- *                   $ref: '#/components/schemas/PaginationData'
+ *                 data: { type: array, items: { $ref: '#/components/schemas/Recipe' } }
+ *                 pagination: { $ref: '#/components/schemas/PaginationData' }
  *       400:
  *         description: Invalid query parameters.
  *         content:
  *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  *       500:
  *         description: Internal server error.
  *         content:
  *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
-router.get('/search', validateSearchRecipesQuery, handleValidationErrors, searchRecipes);
+router.get('/search', 
+  validateSearchRecipesQuery,
+  handleValidationErrors, 
+  searchRecipes
+);
 
 /**
  * @openapi
@@ -601,7 +588,7 @@ router.get('/search', validateSearchRecipesQuery, handleValidationErrors, search
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse' # Could be more specific
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Internal server error.
  *         content:
@@ -609,7 +596,13 @@ router.get('/search', validateSearchRecipesQuery, handleValidationErrors, search
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/chef/:chefId', validateMongoIdParam('chefId'), handleValidationErrors, getRecipesByChef);
+router.get('/chef/:chefId', 
+  validateMongoIdParam('chefId'),
+  handleValidationErrors, 
+  getRecipesByChef
+);
+
+// ... (should be after the /recipes/chef/:chefId route)
 
 /**
  * @openapi
@@ -727,7 +720,11 @@ router.get('/recent', getRecentRecipes);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/category/:category', validatePathParameter('category'), handleValidationErrors, getRecipesByCategory);
+router.get('/category/:category', 
+  validatePathParameter('category'),
+  handleValidationErrors,
+  getRecipesByCategory
+);
 
 /**
  * @openapi
@@ -775,7 +772,11 @@ router.get('/category/:category', validatePathParameter('category'), handleValid
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/region/:region', validatePathParameter('region'), handleValidationErrors, getRecipesByRegion);
+router.get('/region/:region', 
+  validatePathParameter('region'),
+  handleValidationErrors,
+  getRecipesByRegion
+);
 
 /**
  * @openapi
@@ -823,7 +824,11 @@ router.get('/region/:region', validatePathParameter('region'), handleValidationE
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/tribe/:tribe', validatePathParameter('tribe'), handleValidationErrors, getRecipesByTribe);
+router.get('/tribe/:tribe', 
+  validatePathParameter('tribe'),
+  handleValidationErrors,
+  getRecipesByTribe
+);
 
 /**
  * @openapi
@@ -868,7 +873,11 @@ router.get('/tribe/:tribe', validatePathParameter('tribe'), handleValidationErro
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/:id/view', validateMongoIdParam('id'), handleValidationErrors, trackRecipeView);
+router.post('/:id/view', 
+  validateMongoIdParam('id'), 
+  handleValidationErrors, 
+  trackRecipeView
+);
 
 /**
  * @openapi
@@ -927,6 +936,10 @@ router.post('/:id/view', validateMongoIdParam('id'), handleValidationErrors, tra
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:id/related', validateMongoIdParam('id'), handleValidationErrors, getRelatedRecipes);
+router.get('/:id/related', 
+  validateMongoIdParam('id'), 
+  handleValidationErrors, 
+  getRelatedRecipes
+);
 
 export default router; 
