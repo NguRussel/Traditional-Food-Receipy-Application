@@ -370,4 +370,50 @@ export const getUserTasteProfile = asyncHandler(async (req: Request, res: Respon
       // to identify common attributes (tags, ingredients, cuisine types etc.)
     },
   });
+});
+
+/**
+ * @desc    Get analytics for the recommendation service (Admin Only)
+ * @route   GET /api/v1/recommendations/admin/analytics
+ * @access  Admin
+ */
+export const getRecommendationAnalytics = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  // In a real system, this would:
+  // 1. Be protected by admin authentication/authorization middleware.
+  // 2. Aggregate data from UserInteractionModel (e.g., interaction counts, popular recipes, etc.)
+  // 3. Potentially query data about recommendation model performance if applicable.
+
+  // Placeholder response:
+  res.status(200).json({
+    success: true,
+    message: 'Recommendation service analytics (placeholder - admin only)',
+    data: {
+      totalInteractionsTracked: await UserInteractionModel.countDocuments(),
+      sampleMetric: 'Example: Click-through rate on recommendations: X%',
+      notes: 'This endpoint would provide detailed analytics for administrators.'
+    }
+  });
+});
+
+/**
+ * @desc    Trigger retraining of the recommendation model (Admin Only)
+ * @route   POST /api/v1/recommendations/admin/retrain-model
+ * @access  Admin
+ */
+export const triggerModelRetraining = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  // In a real system, this would:
+  // 1. Be protected by admin authentication/authorization middleware.
+  // 2. Initiate a background job or process to retrain the ML models using the latest interaction data.
+  // 3. This could involve calling external ML services or internal scripts.
+
+  // Placeholder response:
+  res.status(200).json({
+    success: true,
+    message: 'Recommendation model retraining process initiated (placeholder - admin only)',
+    data: {
+      status: 'RetrainingJobScheduled',
+      timestamp: new Date(),
+      notes: 'This endpoint would trigger a model retraining pipeline.'
+    }
+  });
 }); 
