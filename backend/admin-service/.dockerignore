@@ -1,0 +1,39 @@
+# Dependency directories
+node_modules/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.*
+!/.env.example
+
+# IDE and OS specific
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Git
+.git
+.gitignore
+
+# Test files and configurations (not needed in production image)
+test/
+tests/
+__tests__/
+coverage/
+jest.config.js
+jest.setup.js
+# src/ # src is needed for the builder stage
+# tsconfig.json # tsconfig is needed for the builder stage
+nodemon.json 
