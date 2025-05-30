@@ -5,6 +5,7 @@ import {
   rejectRecipe,
 } from '../controllers/recipeController';
 import { protect, authorize } from '../middleware/authMiddleware';
+import { validateMongoIdParam, handleValidationErrors } from '../middleware/validationMiddleware';
 
 // TODO: Add authentication and authorization middleware (e.g., protect, authorizeAdmin)
 // import { protect, authorize } from '../middleware/authMiddleware';
@@ -20,9 +21,18 @@ router.use(protect, authorize('admin'));
 router.get('/pending', getPendingRecipes);
 
 // @route   PUT /:id/approve
-router.put('/:id/approve', approveRecipe);
+router.put('/:id/approve', 
+  validateMongoIdParam(), 
+  handleValidationErrors, 
+  approveRecipe
+);
 
 // @route   PUT /:id/reject
-router.put('/:id/reject', rejectRecipe);
+router.put('/:id/reject', 
+  validateMongoIdParam(), 
+  // We might want specific body validation for moderationNotes here too
+  handleValidationErrors, 
+  rejectRecipe
+);
 
 export default router; 
