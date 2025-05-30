@@ -88,9 +88,23 @@ export const getReviewsForRecipe = asyncHandler(async (req: Request, res: Respon
 // @route   GET /api/v1/reviews/:id
 // @access  Public
 export const getReviewById = asyncHandler(async (req: Request, res: Response) => {
-  // const { id } = req.params;
-  // Logic to fetch a single review
-  res.status(200).json({ message: `GET /api/v1/reviews/${req.params.id} - Placeholder for getReviewById` });
+  const { id } = req.params;
+
+  if (!Types.ObjectId.isValid(id)) {
+    throw new CustomError('Invalid review ID format.', 400);
+  }
+
+  const review = await ReviewModel.findById(id);
+
+  if (!review) {
+    throw new CustomError('Review not found.', 404);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Review retrieved successfully',
+    data: review,
+  });
 });
 
 // @desc    Update a review
