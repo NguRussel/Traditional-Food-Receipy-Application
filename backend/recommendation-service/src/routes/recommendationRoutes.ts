@@ -1,5 +1,5 @@
 import express from 'express';
-import { trackInteraction } from '../controllers/interactionController';
+import { trackInteraction, getForYouRecommendations } from '../controllers/interactionController';
 import {
   validateTrackInteraction, 
   handleValidationErrors 
@@ -21,8 +21,18 @@ router.post(
     trackInteraction
 );
 
-// Other recommendation routes will be added here:
 // GET /for-you
+// @desc    Get personalized recipe recommendations
+// @route   GET /api/v1/recommendations/for-you
+// @access  Private (currently expects userId as query param, ideally from auth)
+router.get(
+    '/for-you',
+    // TODO: Add validation if userId is a query param (e.g., isMongoId)
+    // TODO: Add authentication middleware (e.g., protect) to get userId from req.user
+    getForYouRecommendations
+);
+
+// Other recommendation routes will be added here:
 // GET /similar/:recipeId
 // GET /trending
 // GET /based-on-ingredients

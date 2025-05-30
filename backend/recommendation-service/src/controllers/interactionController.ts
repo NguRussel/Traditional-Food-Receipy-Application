@@ -36,4 +36,70 @@ export const trackInteraction = asyncHandler(async (req: Request, res: Response,
     message: 'Interaction tracked successfully',
     data: interaction,
   });
+});
+
+/**
+ * @desc    Get personalized recipe recommendations for a user
+ * @route   GET /api/v1/recommendations/for-you
+ * @access  Private (requires user ID)
+ */
+export const getForYouRecommendations = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  // Assume userId is available, e.g., from auth middleware or query param for now
+  // For a real implementation, this ID would come from an authenticated session.
+  const userId = req.query.userId as string; // Or req.user.id if auth is in place
+
+  if (!userId) {
+    res.status(400).json({ success: false, message: 'User ID is required to get personalized recommendations' });
+    return;
+  }
+
+  // --- Basic Placeholder Logic --- 
+  // 1. Find recent positive interactions by the user.
+  // Positive interactions could be 'like', 'save', 'cook', or a high 'rating'.
+  const positiveInteractionTypes = ['like', 'save', 'cook', 'rating']; // 'rating' implies a rating interaction occurred
+  
+  const recentInteractions = await UserInteractionModel.find({
+    userId: userId, 
+    $or: [
+      { interactionType: { $in: positiveInteractionTypes.filter(type => type !== 'rating') } },
+      { interactionType: 'rating', rating: { $gte: 4 } } // Consider ratings >= 4 as positive
+    ]
+  })
+  .sort({ createdAt: -1 })
+  .limit(20) // Get a decent number of recent interactions to work with
+  .select('recipeId interactionType rating createdAt') // Select relevant fields
+  .lean(); // Use .lean() for faster queries if not modifying docs
+
+  if (!recentInteractions || recentInteractions.length === 0) {
+    res.status(200).json({ 
+      success: true, 
+      message: 'No recent positive interactions found to generate recommendations. Explore more recipes!', 
+      data: [] 
+    });
+    return;
+  }
+
+  // 2. Extract unique recipe IDs from these interactions.
+  // Prioritize more recent or more impactful interactions if desired (e.g. 'cook' > 'like')
+  // For now, just unique IDs
+  const recommendedRecipeIds = [...new Set(recentInteractions.map(interaction => interaction.recipeId.toString()))];
+
+  // 3. In a real system, you'd fetch full recipe details for these IDs from the RecipeService.
+  // For this placeholder, we'll just return the IDs.
+  // You might also want to filter out recipes the user has interacted with very recently (e.g., viewed today).
+
+  // Simulate fetching recipe details (in a real app, this would be an API call or DB query to Recipe service)
+  const recommendedRecipes = recommendedRecipeIds.map(id => ({
+    recipeId: id,
+    // Placeholder: In a real scenario, you would fetch actual recipe data here
+    // title: "Fetched Recipe Title for " + id, 
+    // description: "Fetched recipe description..."
+  }));
+
+  res.status(200).json({
+    success: true,
+    message: 'Personalized recommendations retrieved (placeholder logic)',
+    count: recommendedRecipes.length,
+    data: recommendedRecipes, // Returning IDs, or mocked details
+  });
 }); 
