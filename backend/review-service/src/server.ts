@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import reviewRoutes from './routes/reviewRoutes'; // Will be added later
 import { AuthError } from './middleware/authMiddleware'; // Will be added later
 import CustomError from './utils/CustomError'; // Import CustomError
+import swaggerUi from 'swagger-ui-express'; // Import swaggerUi
+import swaggerSpec from './config/swaggerConfig'; // Import swaggerSpec
 
 dotenv.config();
 
@@ -13,6 +15,9 @@ const PORT = process.env.REVIEW_SERVICE_PORT || 8004;
 
 // Middleware
 app.use(express.json());
+
+// Swagger UI Setup
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // MongoDB Connection
 mongoose.connect(MONGODB_URI)

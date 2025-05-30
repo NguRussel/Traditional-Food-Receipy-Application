@@ -37,9 +37,14 @@ export const createReview = asyncHandler(async (req: IAuthRequest, res: Response
 // @access  Public
 export const getReviewsForRecipe = asyncHandler(async (req: Request, res: Response) => {
   const { recipeId } = req.params;
-  // Validation for recipeId format and pagination params is handled by middleware
-  const page = (req.query.page as unknown as number) || 1; // Parsed by toInt() in validation
-  const limit = (req.query.limit as unknown as number) || 10; // Parsed by toInt() in validation
+  let page = Number(req.query.page) || 1;
+  let limit = Number(req.query.limit) || 10;
+
+  // Ensure page and limit are integers and within valid ranges after potential toInt() from middleware
+  // The validation middleware should handle invalid formats, but this provides a fallback.
+  page = Math.max(1, Math.floor(page));
+  limit = Math.min(100, Math.max(1, Math.floor(limit)));
+
   const skip = (page - 1) * limit;
 
   const query = { recipeId: new Types.ObjectId(recipeId) };
@@ -62,7 +67,7 @@ export const getReviewsForRecipe = asyncHandler(async (req: Request, res: Respon
     count: reviews.length,
     totalReviews,
     totalPages,
-    currentPage: page,
+    currentPage: Number(page), // Ensure it's a number in the response
     data: reviews,
   });
 });
@@ -156,9 +161,12 @@ export const deleteReview = asyncHandler(async (req: IAuthRequest, res: Response
 // @access  Public
 export const getReviewsByUser = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
-  // Validation for userId format and pagination params is handled by middleware
-  const page = (req.query.page as unknown as number) || 1;
-  const limit = (req.query.limit as unknown as number) || 10;
+  let page = Number(req.query.page) || 1;
+  let limit = Number(req.query.limit) || 10;
+
+  page = Math.max(1, Math.floor(page));
+  limit = Math.min(100, Math.max(1, Math.floor(limit)));
+
   const skip = (page - 1) * limit;
 
   const query = { userId: new Types.ObjectId(userId) };
@@ -181,7 +189,7 @@ export const getReviewsByUser = asyncHandler(async (req: Request, res: Response)
     count: reviews.length,
     totalReviews,
     totalPages,
-    currentPage: page,
+    currentPage: Number(page), // Ensure it's a number in the response
     data: reviews,
   });
 }); 
