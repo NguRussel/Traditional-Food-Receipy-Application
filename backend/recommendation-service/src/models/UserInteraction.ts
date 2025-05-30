@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 export interface IUserInteraction extends Document {
   userId: Types.ObjectId; // Assuming this will be linked to a User model in another service or passed directly
   recipeId: Types.ObjectId; // Assuming this will be linked to a Recipe model
-  interactionType: 'view' | 'like' | 'save' | 'cook' | 'share';
+  interactionType: 'view' | 'like' | 'save' | 'cook' | 'share' | 'rating';
   duration?: number; // Optional: duration of view in seconds, for example
   rating?: number;   // Optional: if the interaction was a rating, store the rating value (1-5)
   // timestamp is handled by Mongoose timestamps: true
@@ -23,7 +23,7 @@ const UserInteractionSchema = new Schema<IUserInteraction>(
     },
     interactionType: {
       type: String,
-      enum: ['view', 'like', 'save', 'cook', 'share'],
+      enum: ['view', 'like', 'save', 'cook', 'share', 'rating'],
       required: true,
     },
     duration: {

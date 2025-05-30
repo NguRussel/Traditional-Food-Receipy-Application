@@ -1,6 +1,7 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import recommendationRoutes from './routes/recommendationRoutes';
 
 dotenv.config();
 
@@ -30,9 +31,8 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Recommendation Service is running with TypeScript!');
 });
 
-// TODO: Recommendation Routes will be added here
-// import recommendationRoutes from './routes/recommendationRoutes';
-// app.use('/api/v1/recommendations', recommendationRoutes);
+// Recommendation Routes
+app.use('/api/v1/recommendations', recommendationRoutes);
 
 // Global Error Handler (basic example, can be expanded)
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
