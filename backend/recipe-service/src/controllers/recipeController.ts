@@ -233,4 +233,60 @@ export const getRecipesByChef = asyncHandler(async (req: Request, res: Response,
     currentPage: pageNumber,
     data: recipes,
   });
+});
+
+// @desc    Get popular recipes (sorted by average rating)
+// @route   GET /api/v1/recipes/popular
+// @access  Public
+export const getPopularRecipes = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { page = 1, limit = 10 } = req.query;
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const query: any = { status: 'approved', isActive: true };
+
+  const recipes = await RecipeModel.find(query)
+                            .populate('chefId', 'name avatar')
+                            .sort({ 'ratings.average': -1, 'ratings.count': -1 }) // Prioritize higher average, then more ratings
+                            .skip(skip)
+                            .limit(limitNumber);
+  
+  const totalRecipes = await RecipeModel.countDocuments(query);
+
+  res.status(200).json({
+    success: true,
+    count: recipes.length,
+    totalPages: Math.ceil(totalRecipes / limitNumber),
+    currentPage: pageNumber,
+    data: recipes,
+  });
+});
+
+// @desc    Get recent recipes (sorted by creation date)
+// @route   GET /api/v1/recipes/recent
+// @access  Public
+export const getRecentRecipes = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { page = 1, limit = 10 } = req.query;
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const query: any = { status: 'approved', isActive: true };
+
+  const recipes = await RecipeModel.find(query)
+                            .populate('chefId', 'name avatar')
+                            .sort({ createdAt: -1 })
+                            .skip(skip)
+                            .limit(limitNumber);
+
+  const totalRecipes = await RecipeModel.countDocuments(query);
+
+  res.status(200).json({
+    success: true,
+    count: recipes.length,
+    totalPages: Math.ceil(totalRecipes / limitNumber),
+    currentPage: pageNumber,
+    data: recipes,
+  });
 }); 
