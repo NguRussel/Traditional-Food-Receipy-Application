@@ -208,8 +208,36 @@ export const deleteReview = asyncHandler(async (req: Request, res: Response) => 
 // @route   GET /api/v1/reviews/user/:userId
 // @access  Public (or Private if only for authenticated user to see their own)
 export const getReviewsByUser = asyncHandler(async (req: Request, res: Response) => {
-  // const { userId } = req.params;
-  // const { page = 1, limit = 10 } = req.query; 
-  // Logic to fetch reviews by a user with pagination
-  res.status(200).json({ message: `GET /api/v1/reviews/user/${req.params.userId} - Placeholder for getReviewsByUser` });
+  const { userId } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+
+  if (!Types.ObjectId.isValid(userId)) {
+    throw new CustomError('Invalid userId format.', 400);
+  }
+
+  const query = { userId: new Types.ObjectId(userId) };
+
+  const reviews = await ReviewModel.find(query)
+    .sort({ createdAt: -1 }) // Sort by newest first
+    .skip(skip)
+    .limit(limit);
+  
+  const totalReviews = await ReviewModel.countDocuments(query);
+  const totalPages = Math.ceil(totalReviews / limit);
+
+  if (!reviews.length && page > 1) {
+    throw new CustomError('No reviews found for this page for the specified user.', 404);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Reviews by user retrieved successfully',
+    count: reviews.length,
+    totalReviews,
+    totalPages,
+    currentPage: page,
+    data: reviews,
+  });
 }); 
