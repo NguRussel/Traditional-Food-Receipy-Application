@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import UserInteractionModel, { IUserInteraction } from '../models/UserInteraction';
 import { PipelineStage } from 'mongoose';
+import { IAuthRequest } from '../middleware/authMiddleware';
 
 // Utility for handling async route handlers and catching errors
 const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => 
@@ -11,18 +12,18 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
 /**
  * @desc    Track a new user interaction
  * @route   POST /api/v1/recommendations/interaction
- * @access  Public (or Private if userId is from auth token)
+ * @access  Private (User must be authenticated)
  */
-export const trackInteraction = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const {
-    userId,
-    recipeId,
-    interactionType,
-    duration,
-    rating
-  } = req.body;
+export const trackInteraction = asyncHandler(async (req: IAuthRequest, res: Response, next: NextFunction) => {
+  const { recipeId, interactionType, duration, rating } = req.body;
+  const userId = req.user?.id; // Get userId from authenticated user
 
-  // Manual validation removed, now handled by express-validator middleware
+  if (!userId) {
+    // This case should ideally be caught by 'protect' middleware already
+    res.status(400).json({ success: false, message: 'User ID not found in authenticated request.'});
+    return;
+  }
+  // Validation for other fields is handled by express-validator in routes
 
   const interaction = await UserInteractionModel.create({
     userId,
@@ -31,77 +32,48 @@ export const trackInteraction = asyncHandler(async (req: Request, res: Response,
     duration,
     rating,
   });
-
-  res.status(201).json({
-    success: true,
-    message: 'Interaction tracked successfully',
-    data: interaction,
-  });
+  res.status(201).json({ success: true, message: 'Interaction tracked successfully', data: interaction });
 });
 
 /**
  * @desc    Get personalized recipe recommendations for a user
  * @route   GET /api/v1/recommendations/for-you
- * @access  Private (requires user ID)
+ * @access  Private (User must be authenticated)
  */
-export const getForYouRecommendations = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  // Assume userId is available, e.g., from auth middleware or query param for now
-  // For a real implementation, this ID would come from an authenticated session.
-  const userId = req.query.userId as string; // Or req.user.id if auth is in place
-
+export const getForYouRecommendations = asyncHandler(async (req: IAuthRequest, res: Response, next: NextFunction) => {
+  const userId = req.user?.id; // Get userId from authenticated user
   if (!userId) {
-    res.status(400).json({ success: false, message: 'User ID is required to get personalized recommendations' });
-    return;
+    return res.status(400).json({ success: false, message: 'User ID not found. Authentication required.' });
   }
-
-  // --- Basic Placeholder Logic --- 
-  // 1. Find recent positive interactions by the user.
-  // Positive interactions could be 'like', 'save', 'cook', or a high 'rating'.
-  const positiveInteractionTypes = ['like', 'save', 'cook', 'rating']; // 'rating' implies a rating interaction occurred
-  
+  // ... (rest of the logic remains the same, validation for userId query param will be removed from route)
+  // ... (find recentInteractions using this userId)
+  const positiveInteractionTypes = ['like', 'save', 'cook', 'rating'];
   const recentInteractions = await UserInteractionModel.find({
     userId: userId, 
     $or: [
       { interactionType: { $in: positiveInteractionTypes.filter(type => type !== 'rating') } },
-      { interactionType: 'rating', rating: { $gte: 4 } } // Consider ratings >= 4 as positive
+      { interactionType: 'rating', rating: { $gte: 4 } }
     ]
   })
   .sort({ createdAt: -1 })
-  .limit(20) // Get a decent number of recent interactions to work with
-  .select('recipeId interactionType rating createdAt') // Select relevant fields
-  .lean(); // Use .lean() for faster queries if not modifying docs
+  .limit(20)
+  .select('recipeId interactionType rating createdAt')
+  .lean();
 
   if (!recentInteractions || recentInteractions.length === 0) {
-    res.status(200).json({ 
+    return res.status(200).json({ 
       success: true, 
       message: 'No recent positive interactions found to generate recommendations. Explore more recipes!', 
       data: [] 
     });
-    return;
   }
-
-  // 2. Extract unique recipe IDs from these interactions.
-  // Prioritize more recent or more impactful interactions if desired (e.g. 'cook' > 'like')
-  // For now, just unique IDs
   const recommendedRecipeIds = [...new Set(recentInteractions.map(interaction => interaction.recipeId.toString()))];
-
-  // 3. In a real system, you'd fetch full recipe details for these IDs from the RecipeService.
-  // For this placeholder, we'll just return the IDs.
-  // You might also want to filter out recipes the user has interacted with very recently (e.g., viewed today).
-
-  // Simulate fetching recipe details (in a real app, this would be an API call or DB query to Recipe service)
-  const recommendedRecipes = recommendedRecipeIds.map(id => ({
-    recipeId: id,
-    // Placeholder: In a real scenario, you would fetch actual recipe data here
-    // title: "Fetched Recipe Title for " + id, 
-    // description: "Fetched recipe description..."
-  }));
-
+  const recommendedRecipes = recommendedRecipeIds.map(id => ({ recipeId: id }));
   res.status(200).json({
     success: true,
-    message: 'Personalized recommendations retrieved (placeholder logic)',
+    message: 'Personalized recommendations retrieved',
     count: recommendedRecipes.length,
-    data: recommendedRecipes, // Returning IDs, or mocked details
+    data: recommendedRecipes,
   });
 });
 
@@ -302,34 +274,27 @@ export const getRecipesByIngredients = asyncHandler(async (req: Request, res: Re
 /**
  * @desc    Get a user's taste profile based on their interactions
  * @route   GET /api/v1/recommendations/user-taste-profile
- * @access  Private (requires user ID)
+ * @access  Private (User must be authenticated)
  */
-export const getUserTasteProfile = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.query.userId as string; // Or req.user.id if auth is in place
-
+export const getUserTasteProfile = asyncHandler(async (req: IAuthRequest, res: Response, next: NextFunction) => {
+  const userId = req.user?.id; // Get userId from authenticated user
   if (!userId) {
-    res.status(400).json({ success: false, message: 'User ID is required to get a taste profile.' });
-    return;
+    return res.status(400).json({ success: false, message: 'User ID not found. Authentication required.' });
   }
-
-  // --- Basic Placeholder Logic for Taste Profile ---
-  // 1. Fetch all (or a significant number of) interactions for the user.
+  // ... (rest of the logic, validation for userId query param will be removed from route)
   const userInteractions = await UserInteractionModel.find({ userId: userId })
     .sort({ createdAt: -1 })
-    .limit(200) // Limit to a reasonable number for this placeholder
+    .limit(200)
     .select('recipeId interactionType rating')
     .lean();
 
   if (!userInteractions || userInteractions.length === 0) {
-    res.status(200).json({ 
+    return res.status(200).json({ 
       success: true, 
       message: 'No interaction history found for this user to build a taste profile. Start interacting with recipes!',
       data: { interactionSummary: {}, recentlyInteractedRecipeIds: [] }
     });
-    return;
   }
-
-  // 2. Summarize interactions
   const interactionSummary: { [key: string]: number } = {};
   userInteractions.forEach(interaction => {
     interactionSummary[interaction.interactionType] = (interactionSummary[interaction.interactionType] || 0) + 1;
@@ -338,36 +303,21 @@ export const getUserTasteProfile = asyncHandler(async (req: Request, res: Respon
       interactionSummary[ratingKey] = (interactionSummary[ratingKey] || 0) + 1;
     }
   });
-
-  // 3. Get a list of unique recipe IDs the user has positively interacted with
   const positiveRecipeIds = [
     ...new Set(
       userInteractions
-        .filter(i => 
-          i.interactionType === 'like' || 
-          i.interactionType === 'save' || 
-          i.interactionType === 'cook' || 
-          (i.interactionType === 'rating' && i.rating && i.rating >= 4)
-        )
-        .map(i => i.recipeId.toString())
-    )
+        .filter(i => i.interactionType === 'like' || i.interactionType === 'save' || i.interactionType === 'cook' || (i.interactionType === 'rating' && i.rating && i.rating >= 4))
+        .map(i => i.recipeId.toString()))
   ];
-
-  // In a real system, you'd analyze these interactions further:
-  // - Aggregate common tags/categories/ingredients from the interacted recipes (needs recipe data).
-  // - Identify preferred cooking times, difficulties etc.
-
   res.status(200).json({
     success: true,
-    message: 'User taste profile retrieved (placeholder logic based on interaction counts)',
+    message: 'User taste profile retrieved',
     data: {
       userId: userId,
       totalInteractions: userInteractions.length,
       interactionSummary: interactionSummary,
       distinctPositivelyInteractedRecipes: positiveRecipeIds.length,
-      recentPositiveInteractionsRecipeIds: positiveRecipeIds.slice(0, 20), // Show some examples
-      // Note: Further analysis would require fetching details for these recipe IDs from RecipeService
-      // to identify common attributes (tags, ingredients, cuisine types etc.)
+      recentPositiveInteractionsRecipeIds: positiveRecipeIds.slice(0, 20),
     },
   });
 });

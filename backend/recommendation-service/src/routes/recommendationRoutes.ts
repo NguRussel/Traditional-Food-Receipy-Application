@@ -14,8 +14,9 @@ import {
   handleValidationErrors,
   validateMongoIdParam,
   validateIngredientsQueryParam,
-  validateUserIdQueryParam
+  // validateUserIdQueryParam, // No longer needed for routes, userId from req.user
 } from '../middleware/validationMiddleware';
+import { protect, authorize, IAuthRequest } from '../middleware/authMiddleware'; // Added protect, authorize
 
 // We will add validation middleware later
 // import { validateTrackInteraction } from '../middleware/validationMiddleware'; 
@@ -29,6 +30,7 @@ const adminRouter = express.Router(); // Create a new router for admin routes
 // @access  Public (or Private, depending on how userId is handled - e.g. from auth token or request body)
 router.post(
     '/interaction',
+    protect, // Added protect
     validateTrackInteraction, // Apply validation rules
     handleValidationErrors,   // Handle any validation errors
     trackInteraction
@@ -40,8 +42,9 @@ router.post(
 // @access  Private (currently expects userId as query param, ideally from auth)
 router.get(
     '/for-you',
-    validateUserIdQueryParam, // Added validation for userId query param
-    handleValidationErrors,
+    protect, // Added protect
+    // validateUserIdQueryParam, // Removed, userId from req.user
+    handleValidationErrors, // Keep for other potential query validations if added later
     getForYouRecommendations
 );
 
@@ -82,8 +85,9 @@ router.get(
 // @access  Private (expects userId as query param)
 router.get(
     '/user-taste-profile',
-    validateUserIdQueryParam, // Validate the userId query parameter
-    handleValidationErrors,
+    protect, // Added protect
+    // validateUserIdQueryParam, // Removed, userId from req.user
+    handleValidationErrors, // Keep for other potential query validations
     getUserTasteProfile
 );
 
@@ -96,9 +100,10 @@ router.get(
 // @desc    Get recommendation service analytics
 // @route   GET /api/v1/recommendations/admin/analytics
 // @access  Admin
+adminRouter.use(protect, authorize(['admin'])); // Apply protect and authorize to all admin routes
+
 adminRouter.get(
     '/analytics',
-    // TODO: Add admin authentication middleware here
     getRecommendationAnalytics
 );
 
@@ -107,7 +112,6 @@ adminRouter.get(
 // @access  Admin
 adminRouter.post(
     '/retrain-model',
-    // TODO: Add admin authentication middleware here
     triggerModelRetraining
 );
 
