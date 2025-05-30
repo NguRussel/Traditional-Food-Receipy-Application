@@ -102,4 +102,86 @@ export const getForYouRecommendations = asyncHandler(async (req: Request, res: R
     count: recommendedRecipes.length,
     data: recommendedRecipes, // Returning IDs, or mocked details
   });
+});
+
+/**
+ * @desc    Get recipes similar to a given recipe ID
+ * @route   GET /api/v1/recommendations/similar/:recipeId
+ * @access  Public
+ */
+export const getSimilarRecipes = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const targetRecipeId = req.params.recipeId;
+
+  // --- Highly Placeholder Logic --- 
+  // 1. Find users who had strong positive interactions with the targetRecipeId.
+  const positiveInteractionTypes = ['like', 'save', 'cook', 'rating'];
+  const interactionsWithTarget = await UserInteractionModel.find({
+    recipeId: targetRecipeId,
+    $or: [
+      { interactionType: { $in: positiveInteractionTypes.filter(type => type !== 'rating') } },
+      { interactionType: 'rating', rating: { $gte: 4 } }
+    ]
+  })
+  .limit(50) // Consider interactions from a sample of users
+  .select('userId')
+  .lean();
+
+  if (!interactionsWithTarget || interactionsWithTarget.length === 0) {
+    res.status(200).json({ 
+      success: true, 
+      message: 'No significant user interaction data found for the target recipe to find similar ones. Try a popular recipe!', 
+      data: [] 
+    });
+    return;
+  }
+
+  const usersWhoInteractedPositively = [...new Set(interactionsWithTarget.map(i => i.userId.toString()))];
+
+  // 2. Find other recipes these users also interacted positively with.
+  if (usersWhoInteractedPositively.length === 0) {
+    res.status(200).json({ 
+        success: true, 
+        message: 'No users found with positive interactions for the target recipe to base similarity on.', 
+        data: [] 
+      });
+      return;
+  }
+
+  const similarRecipeInteractions = await UserInteractionModel.find({
+    userId: { $in: usersWhoInteractedPositively }, // Users from step 1
+    recipeId: { $ne: targetRecipeId }, // Exclude the original recipe
+    $or: [
+      { interactionType: { $in: positiveInteractionTypes.filter(type => type !== 'rating') } },
+      { interactionType: 'rating', rating: { $gte: 4 } }
+    ]
+  })
+  .sort({ createdAt: -1 }) // Prioritize more recent interactions
+  .limit(100) // Get a pool of potential similar recipe interactions
+  .select('recipeId')
+  .lean();
+
+  if (!similarRecipeInteractions || similarRecipeInteractions.length === 0) {
+    res.status(200).json({ 
+      success: true, 
+      message: 'Could not find other recipes based on shared user interaction patterns.', 
+      data: [] 
+    });
+    return;
+  }
+
+  // 3. Aggregate and rank these other recipes (e.g., by frequency of positive interaction)
+  // For now, just unique recipe IDs, perhaps limited
+  const similarRecipeIds = [...new Set(similarRecipeInteractions.map(interaction => interaction.recipeId.toString()))].slice(0, 10);
+
+  const similarRecipes = similarRecipeIds.map(id => ({
+    recipeId: id,
+    // Placeholder: In a real scenario, you would fetch actual recipe data here
+  }));
+
+  res.status(200).json({
+    success: true,
+    message: 'Similar recipes retrieved (placeholder logic based on user interactions)',
+    count: similarRecipes.length,
+    data: similarRecipes,
+  });
 }); 

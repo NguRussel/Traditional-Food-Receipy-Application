@@ -1,8 +1,13 @@
 import express from 'express';
-import { trackInteraction, getForYouRecommendations } from '../controllers/interactionController';
+import {
+  trackInteraction, 
+  getForYouRecommendations, 
+  getSimilarRecipes 
+} from '../controllers/interactionController';
 import {
   validateTrackInteraction, 
-  handleValidationErrors 
+  handleValidationErrors,
+  validateMongoIdParam
 } from '../middleware/validationMiddleware';
 
 // We will add validation middleware later
@@ -32,8 +37,18 @@ router.get(
     getForYouRecommendations
 );
 
-// Other recommendation routes will be added here:
 // GET /similar/:recipeId
+// @desc    Get recipes similar to a given recipe
+// @route   GET /api/v1/recommendations/similar/:recipeId
+// @access  Public
+router.get(
+    '/similar/:recipeId',
+    validateMongoIdParam('recipeId'), // Validate the recipeId URL parameter
+    handleValidationErrors,
+    getSimilarRecipes
+);
+
+// Other recommendation routes will be added here:
 // GET /trending
 // GET /based-on-ingredients
 // GET /user-taste-profile
