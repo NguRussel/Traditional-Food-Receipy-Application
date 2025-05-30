@@ -7,7 +7,8 @@ import {
   deleteReview,
   getReviewsByUser
 } from '../controllers/reviewController';
-// import { protect, authorize } from '../middleware/authMiddleware'; // Will be needed later
+import { protect } from '../middleware/authMiddleware'; // Import protect
+// import { authorize } from '../middleware/authMiddleware'; // Will be needed later
 // import { validateCreateReview, validateUpdateReview, validateMongoIdParam } from '../middleware/validationMiddleware'; // Will be needed later
 // import { handleValidationErrors } from '../middleware/validationMiddleware'; // Will be needed later
 
@@ -16,7 +17,7 @@ const router = express.Router();
 // Create a new review
 router.post(
   '/',
-  // protect, // Example: User must be logged in to create
+  protect, // User must be logged in to create
   // validateCreateReview, // Example: Validate input
   // handleValidationErrors,
   createReview
@@ -49,7 +50,7 @@ router.get(
 // Update a review (user must own the review)
 router.put(
   '/:id',
-  // protect, // Example: User must be logged in
+  protect, // User must be logged in
   // validateMongoIdParam('id'),
   // validateUpdateReview, // Example: Validate input for update
   // handleValidationErrors,
@@ -59,8 +60,8 @@ router.put(
 // Delete a review (user must own the review or be an admin)
 router.delete(
   '/:id',
-  // protect, // Example: User must be logged in
-  // authorize(['admin', 'user']), // Example: Specific logic for delete will be in controller based on ownership
+  protect, // User must be logged in
+  // authorize(['admin']), // Further role check can be added if needed or handled in controller
   // validateMongoIdParam('id'),
   // handleValidationErrors,
   deleteReview

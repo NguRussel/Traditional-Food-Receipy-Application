@@ -2,7 +2,7 @@ import express, { Express, Request, Response, NextFunction, ErrorRequestHandler 
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import reviewRoutes from './routes/reviewRoutes'; // Will be added later
-// import { AuthError } from './middleware/authMiddleware'; // Will be added later
+import { AuthError } from './middleware/authMiddleware'; // Will be added later
 import CustomError from './utils/CustomError'; // Import CustomError
 
 dotenv.config();
@@ -40,14 +40,14 @@ app.use('/api/v1/reviews', reviewRoutes);
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
   console.error("Global Error Handler caught:", err.stack);
   
-  if (err instanceof CustomError) { // Handle CustomError first
+  if (err instanceof AuthError) { // Handle AuthError
     res.status(err.statusCode).json({ success: false, message: err.message });
     return;
   }
-  // if (err instanceof AuthError) { // Will be uncommented later for auth
-  //   res.status(err.statusCode).json({ success: false, message: err.message });
-  //   return;
-  // }
+  if (err instanceof CustomError) { // Handle CustomError
+    res.status(err.statusCode).json({ success: false, message: err.message });
+    return;
+  }
   
   // Handle Mongoose validation errors (e.g. unique index violation)
   if (err.name === 'ValidationError') {
