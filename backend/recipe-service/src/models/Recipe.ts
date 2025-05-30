@@ -33,6 +33,7 @@ export interface IRecipe extends Document {
     average: number;
     count: number;
   };
+  views?: number;
   nutritionInfo?: any; // Placeholder for NutritionInfo, to be defined later if needed
   status: 'draft' | 'pending' | 'approved' | 'rejected';
   moderationNotes?: string;
@@ -78,6 +79,7 @@ const RecipeSchema = new Schema<IRecipe>(
       average: { type: Number, default: 0 },
       count: { type: Number, default: 0 },
     },
+    views: { type: Number, default: 0 },
     nutritionInfo: { type: Schema.Types.Mixed }, // Flexible type for now
     status: {
       type: String,

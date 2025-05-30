@@ -385,4 +385,37 @@ export const getRecipesByTribe = asyncHandler(async (req: Request, res: Response
     currentPage: pageNumber,
     data: recipes,
   });
+});
+
+// @desc    Track a view for a recipe
+// @route   POST /api/v1/recipes/:id/view
+// @access  Public (or Private if only logged-in users can trigger views)
+export const trackRecipeView = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).json({ success: false, message: 'Invalid Recipe ID' });
+    return;
+  }
+
+  const recipe = await RecipeModel.findByIdAndUpdate(
+    id,
+    { $inc: { views: 1 } }, // Increment the views field by 1
+    { new: true, runValidators: false } // Return the updated document, skip validators for this simple increment
+  );
+
+  if (!recipe) {
+    res.status(404).json({ success: false, message: 'Recipe not found' });
+    return;
+  }
+
+  // We might also want to record this interaction in the UserInteraction collection for the Recommendation Service
+  // This would be an async call, potentially to another service or a direct DB write if sharing DB (not ideal for microservices)
+  // Example: await recordUserInteraction(req.user?.id, id, 'view');
+
+  res.status(200).json({ 
+    success: true, 
+    message: 'Recipe view tracked successfully', 
+    data: { views: recipe.views } // Optionally return the new view count
+  });
 }); 
