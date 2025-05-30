@@ -48,10 +48,40 @@ export const createReview = asyncHandler(async (req: Request, res: Response) => 
 // @route   GET /api/v1/reviews/recipe/:recipeId
 // @access  Public
 export const getReviewsForRecipe = asyncHandler(async (req: Request, res: Response) => {
-  // const { recipeId } = req.params;
-  // const { page = 1, limit = 10 } = req.query;
-  // Logic to fetch reviews for a recipe with pagination
-  res.status(200).json({ message: `GET /api/v1/reviews/recipe/${req.params.recipeId} - Placeholder for getReviewsForRecipe` });
+  const { recipeId } = req.params;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+
+  if (!Types.ObjectId.isValid(recipeId)) {
+    throw new CustomError('Invalid recipeId format.', 400);
+  }
+
+  const query = { recipeId: new Types.ObjectId(recipeId) };
+
+  const reviews = await ReviewModel.find(query)
+    .sort({ createdAt: -1 }) // Sort by newest first
+    .skip(skip)
+    .limit(limit);
+  
+  const totalReviews = await ReviewModel.countDocuments(query);
+  const totalPages = Math.ceil(totalReviews / limit);
+
+  if (!reviews.length && page > 1) {
+    // If no reviews found for a page > 1, it means the page number is too high
+    throw new CustomError('No reviews found for this page.', 404);
+  }
+  // It's okay to return an empty array if no reviews for recipeId on page 1
+
+  res.status(200).json({
+    success: true,
+    message: 'Reviews retrieved successfully',
+    count: reviews.length,
+    totalReviews,
+    totalPages,
+    currentPage: page,
+    data: reviews,
+  });
 });
 
 // @desc    Get a single review by its ID
