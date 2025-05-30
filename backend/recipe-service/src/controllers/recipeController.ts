@@ -1,27 +1,36 @@
 import { Request, Response, NextFunction } from 'express';
 import RecipeModel, { IRecipe } from '../models/Recipe';
 import mongoose from 'mongoose';
+import { IAuthRequest } from '../middleware/authMiddleware'; // Import IAuthRequest
 
 // Utility to handle controller errors and pass them to the next middleware
 const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => 
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: IAuthRequest, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
 
 // @desc    Create a new recipe
 // @route   POST /api/v1/recipes
-// @access  Private (Chef only - to be implemented)
-export const createRecipe = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  // TODO: Add validation for req.body
-  // TODO: Get chefId and chefName from authenticated user (e.g., req.user)
-  const recipeData = { ...req.body };
-  if (!recipeData.chefId || !recipeData.chefName) {
-    res.status(400).json({ success: false, message: 'Chef ID and Chef Name are required' });
-    return; // Ensure no further execution
+// @access  Private (Chef only)
+export const createRecipe = asyncHandler(async (req: IAuthRequest, res: Response, next: NextFunction) => {
+  const { name, description, cookingTime, difficulty, servings, ingredients, instructions, tags, images, videoUrl, nutritionInfo } = req.body;
+  const user = req.user!;
+
+  // Basic check for chefName - in a real app, this might come from a User service or be part of JWT
+  // For now, let's assume chefName is passed or can be derived. If not, it might need to be fetched.
+  const chefNameFromBody = req.body.chefName; 
+  if (!chefNameFromBody) {
+      res.status(400).json({ success: false, message: 'chefName is required in the request body for now.' });
+      return;
   }
 
   try {
-    const recipe: IRecipe = new RecipeModel(recipeData);
+    const recipe: IRecipe = new RecipeModel({
+      name, description, cookingTime, difficulty, servings, ingredients, instructions, tags, images, videoUrl, nutritionInfo,
+      chefId: user.id, // Use user.id from protect middleware
+      chefName: chefNameFromBody, // Using chefName from body for now
+      // status will default to 'draft' as per schema
+    });
     await recipe.save();
     res.status(201).json({ success: true, data: recipe });
   } catch (error) {
@@ -29,7 +38,6 @@ export const createRecipe = asyncHandler(async (req: Request, res: Response, nex
         res.status(400).json({ success: false, message: 'Validation Error', errors: error.errors });
         return;
     }
-    // For other errors, let asyncHandler pass it to the global error handler
     throw error; 
   }
 });
@@ -61,26 +69,40 @@ export const getRecipeById = asyncHandler(async (req: Request, res: Response, ne
 
 // @desc    Update a recipe
 // @route   PUT /api/v1/recipes/:id
-// @access  Private (Chef/Admin only - to be implemented)
-export const updateRecipe = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+// @access  Private (Chef/Admin only)
+export const updateRecipe = asyncHandler(async (req: IAuthRequest, res: Response, next: NextFunction) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ success: false, message: 'Invalid Recipe ID' });
     return;
   }
+  const user = req.user!;
+  const recipeToUpdate = await RecipeModel.findById(req.params.id);
+
+  if (!recipeToUpdate) {
+    res.status(404).json({ success: false, message: 'Recipe not found' });
+    return;
+  }
+
+  // Authorization: Only recipe owner or admin can update
+  if (recipeToUpdate.chefId.toString() !== user.id.toString() && !user.roles.includes('admin')) {
+    res.status(403).json({ success: false, message: 'User not authorized to update this recipe' });
+    return;
+  }
+
   // TODO: Add validation for req.body
   // TODO: Add authorization to ensure only the recipe owner or an admin can update
 
   try {
-    const recipe = await RecipeModel.findByIdAndUpdate(req.params.id, req.body, {
+    const updatedRecipe = await RecipeModel.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
 
-    if (!recipe) {
+    if (!updatedRecipe) {
       res.status(404).json({ success: false, message: 'Recipe not found' });
       return;
     }
-    res.status(200).json({ success: true, data: recipe });
+    res.status(200).json({ success: true, data: updatedRecipe });
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
         res.status(400).json({ success: false, message: 'Validation Error', errors: error.errors });
@@ -92,22 +114,27 @@ export const updateRecipe = asyncHandler(async (req: Request, res: Response, nex
 
 // @desc    Delete a recipe
 // @route   DELETE /api/v1/recipes/:id
-// @access  Private (Chef/Admin only - to be implemented)
-export const deleteRecipe = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+// @access  Private (Chef/Admin only)
+export const deleteRecipe = asyncHandler(async (req: IAuthRequest, res: Response, next: NextFunction) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     res.status(400).json({ success: false, message: 'Invalid Recipe ID' });
     return;
   }
-  // TODO: Add authorization to ensure only the recipe owner or an admin can delete
+  const user = req.user!;
+  const recipeToDelete = await RecipeModel.findById(req.params.id);
 
-  const recipe = await RecipeModel.findById(req.params.id);
-
-  if (!recipe) {
+  if (!recipeToDelete) {
     res.status(404).json({ success: false, message: 'Recipe not found' });
     return;
   }
 
-  await recipe.deleteOne();
+  // Authorization: Only recipe owner or admin can delete
+  if (recipeToDelete.chefId.toString() !== user.id.toString() && !user.roles.includes('admin')) {
+    res.status(403).json({ success: false, message: 'User not authorized to delete this recipe' });
+    return;
+  }
+
+  await recipeToDelete.deleteOne();
   res.status(200).json({ success: true, message: 'Recipe deleted successfully', data: {} });
 });
 
@@ -505,10 +532,8 @@ export const getPendingRecipes = asyncHandler(async (req: Request, res: Response
 // @desc    Approve a recipe
 // @route   PUT /api/v1/recipes/admin/:id/approve
 // @access  Private (Admin only)
-export const approveRecipe = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  // TODO: Add authorization to ensure only admins can access
-  // TODO: Get adminId from authenticated user (e.g., req.user.id)
-  const adminIdPlaceholder = new mongoose.Types.ObjectId(); // Placeholder
+export const approveRecipe = asyncHandler(async (req: IAuthRequest, res: Response, next: NextFunction) => {
+  const user = req.user!; // Admin user from protect middleware
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -521,8 +546,8 @@ export const approveRecipe = asyncHandler(async (req: Request, res: Response, ne
     {
       status: 'approved',
       approvedAt: new Date(),
-      approvedBy: adminIdPlaceholder, // Replace with actual adminId from auth
-      moderationNotes: 'Recipe approved by admin.' // Or allow admin to pass notes
+      approvedBy: user.id as mongoose.Types.ObjectId, // Use admin user.id
+      moderationNotes: req.body.moderationNotes || 'Recipe approved by admin.'
     },
     { new: true, runValidators: true }
   );
@@ -540,12 +565,10 @@ export const approveRecipe = asyncHandler(async (req: Request, res: Response, ne
 // @desc    Reject a recipe
 // @route   PUT /api/v1/recipes/admin/:id/reject
 // @access  Private (Admin only)
-export const rejectRecipe = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  // TODO: Add authorization to ensure only admins can access
-  // TODO: Get adminId from authenticated user (e.g., req.user.id)
-  const adminIdPlaceholder = new mongoose.Types.ObjectId(); // Placeholder
+export const rejectRecipe = asyncHandler(async (req: IAuthRequest, res: Response, next: NextFunction) => {
+  const user = req.user!; // Admin user from protect middleware
   const { id } = req.params;
-  const { moderationNotes } = req.body; // Admin should provide a reason for rejection
+  const { moderationNotes } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.status(400).json({ success: false, message: 'Invalid Recipe ID' });
@@ -562,8 +585,9 @@ export const rejectRecipe = asyncHandler(async (req: Request, res: Response, nex
     {
       status: 'rejected',
       moderationNotes: moderationNotes,
-      approvedAt: undefined, // Clear any previous approval date
-      approvedBy: undefined    // Clear any previous approver
+      approvedAt: undefined,
+      approvedBy: undefined,
+      // approvedBy: user.id as mongoose.Types.ObjectId, // Optionally log who rejected it, but not in 'approvedBy' field
     },
     { new: true, runValidators: true }
   );

@@ -1,6 +1,7 @@
 import express, { Express, Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { AuthError } from './middleware/authMiddleware'; // Import AuthError
 
 dotenv.config();
 
@@ -40,6 +41,12 @@ app.use('/api/v1/recipes/admin', adminRecipeRoutes); // Admin-specific recipe ro
 // Global Error Handler
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
   console.error('Error caught by global error handler:', err.stack);
+
+  // Handle AuthError specifically
+  if (err instanceof AuthError) {
+    res.status(err.statusCode).json({ success: false, message: err.message });
+    return;
+  }
 
   // Mongoose CastError (invalid ObjectId)
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
