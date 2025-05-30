@@ -1,5 +1,58 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     UserInteractionInput:
+ *       type: object
+ *       required:
+ *         - userId
+ *         - recipeId
+ *         - interactionType
+ *       properties:
+ *         userId:
+ *           type: string
+ *           format: objectId
+ *           description: The ID of the user performing the interaction.
+ *         recipeId:
+ *           type: string
+ *           format: objectId
+ *           description: The ID of the recipe being interacted with.
+ *         interactionType:
+ *           type: string
+ *           enum: [view, like, save, cook, share, rating]
+ *           description: The type of interaction.
+ *         duration:
+ *           type: integer
+ *           format: int32
+ *           description: Duration of interaction in seconds (e.g., for 'view').
+ *           nullable: true
+ *         rating:
+ *           type: integer
+ *           format: int32
+ *           minimum: 1
+ *           maximum: 5
+ *           description: Rating value (1-5) if interactionType is 'rating'.
+ *           nullable: true
+ *     UserInteraction:
+ *       allOf:
+ *         - $ref: '#/components/schemas/UserInteractionInput'
+ *         - type: object
+ *           properties:
+ *             _id:
+ *               type: string
+ *               format: objectId
+ *               description: The unique identifier for the interaction.
+ *             createdAt:
+ *               type: string
+ *               format: date-time
+ *               description: Timestamp of when the interaction was created.
+ *             updatedAt:
+ *               type: string
+ *               format: date-time
+ *               description: Timestamp of when the interaction was last updated.
+ */
 export interface IUserInteraction extends Document {
   userId: Types.ObjectId; // Assuming this will be linked to a User model in another service or passed directly
   recipeId: Types.ObjectId; // Assuming this will be linked to a Recipe model
