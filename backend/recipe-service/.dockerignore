@@ -1,0 +1,27 @@
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+dist/ # We build this inside the Dockerfile, so no need to copy the local one
+
+# Optional: Environment files
+.env
+.env*.local
+.env*.development
+.env*.test
+.env*.production
+
+# Optional: IDE and editor directories/files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Optional: OS generated files
+.DS_Store
+Thumbs.db 
