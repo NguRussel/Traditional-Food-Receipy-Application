@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { body, validationResult, ValidationChain } from 'express-validator';
+import { body, param, validationResult, ValidationChain } from 'express-validator';
 
 // Middleware to handle validation errors from express-validator
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction): void => {
@@ -44,9 +44,8 @@ export const validateTrackInteraction: ValidationChain[] = [
     .isFloat({ min:1, max: 5}).withMessage('Rating, if provided, must be a number between 1 and 5'),
 ];
 
-// Placeholder for validating MongoDB ObjectIds in URL parameters (if needed later)
+// Validation for MongoDB ObjectIds in URL parameters
 export const validateMongoIdParam = (paramName: string = 'id'): ValidationChain => {
-  // This will be used if we have routes like /:id. For now, not directly used for /interaction
-  // return param(paramName).isMongoId().withMessage(`Parameter :${paramName} must be a valid MongoDB ObjectId`);
-  return body(paramName); // This is a placeholder, actual param validation is different
+  return param(paramName)
+    .isMongoId().withMessage(`Parameter :${paramName} must be a valid MongoDB ObjectId`);
 }; 
