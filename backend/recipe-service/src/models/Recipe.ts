@@ -1,6 +1,37 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
-// Interface for Ingredient Subdocument
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Ingredient:
+ *       type: object
+ *       required:
+ *         - name
+ *         - quantity
+ *         - unit
+ *       properties:
+ *         _id: 
+ *           type: string
+ *           description: The auto-generated id of the ingredient (within a recipe)
+ *           readOnly: true
+ *         name:
+ *           type: string
+ *           description: Name of the ingredient
+ *           example: Palm Oil
+ *         quantity:
+ *           type: string
+ *           description: Quantity of the ingredient (e.g., '2', '1/2')
+ *           example: '2'
+ *         unit:
+ *           type: string
+ *           description: Unit for the quantity (e.g., 'cups', 'tbsp', 'kg')
+ *           example: cups
+ *         isOptional:
+ *           type: boolean
+ *           description: Whether the ingredient is optional
+ *           default: false
+ */
 export interface IIngredient extends Document {
   name: string;
   quantity: string;
@@ -8,7 +39,172 @@ export interface IIngredient extends Document {
   isOptional: boolean;
 }
 
-// Interface for Recipe Document
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Recipe:
+ *       type: object
+ *       required:
+ *         - name
+ *         - description
+ *         - chefId
+ *         - chefName
+ *         - cookingTime
+ *         - difficulty
+ *         - servings
+ *         - ingredients
+ *         - instructions
+ *         - tags
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The auto-generated id of the recipe
+ *           readOnly: true
+ *         name:
+ *           type: string
+ *           description: Name of the recipe
+ *           example: Ndole
+ *         description:
+ *           type: string
+ *           description: A brief description of the recipe
+ *           example: A delicious Cameroonian dish made with bitterleaf and peanuts.
+ *         chefId:
+ *           type: string
+ *           description: ID of the chef who created the recipe
+ *           example: 60d5ec49f739d4001c9d8182
+ *         chefName:
+ *           type: string
+ *           description: Name of the chef (denormalized)
+ *           example: Mama Philo
+ *         cookingTime:
+ *           type: integer
+ *           format: int32
+ *           description: Cooking time in minutes
+ *           example: 90
+ *         difficulty:
+ *           type: string
+ *           enum: [Easy, Medium, Hard]
+ *           description: Difficulty level of the recipe
+ *           example: Medium
+ *         servings:
+ *           type: integer
+ *           format: int32
+ *           description: Number of servings the recipe makes
+ *           example: 4
+ *         ingredients:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Ingredient'
+ *         instructions:
+ *           type: array
+ *           items:
+ *             type: string
+ *           description: Steps to prepare the recipe
+ *           example: ["Wash the bitterleaf thoroughly.", "Boil the meat until tender."]
+ *         tags:
+ *           type: object
+ *           properties:
+ *             ingredients:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               description: Keyword ingredients for searching/tagging
+ *               example: ["bitterleaf", "peanuts", "beef"]
+ *             categories:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               description: Recipe categories (e.g., main course, soup)
+ *               example: ["main course", "traditional"]
+ *             timeOfDay:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               description: Suitable time of day for the recipe
+ *               example: ["lunch", "dinner"]
+ *             region:
+ *               type: string
+ *               description: Cameroonian region associated with the recipe
+ *               example: Littoral
+ *             tribe:
+ *               type: string
+ *               description: Tribe associated with the recipe
+ *               example: Douala
+ *             holidays:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               description: Holidays the recipe is suitable for
+ *               example: ["Christmas"]
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: url
+ *           description: URLs of images for the recipe
+ *           example: ["http://example.com/ndole1.jpg"]
+ *         videoUrl:
+ *           type: string
+ *           format: url
+ *           description: URL of a video for the recipe
+ *           example: http://example.com/ndole_video.mp4
+ *         ratings:
+ *           type: object
+ *           properties:
+ *             average:
+ *               type: number
+ *               format: float
+ *               description: Average rating (1-5)
+ *               default: 0
+ *             count:
+ *               type: integer
+ *               format: int32
+ *               description: Number of ratings received
+ *               default: 0
+ *           readOnly: true 
+ *         views:
+ *           type: integer
+ *           format: int32
+ *           description: Number of times the recipe has been viewed
+ *           default: 0
+ *           readOnly: true
+ *         nutritionInfo:
+ *           type: object
+ *           description: Nutritional information (flexible structure for now)
+ *           example: { calories: 500, protein: "30g" }
+ *         status:
+ *           type: string
+ *           enum: [draft, pending, approved, rejected]
+ *           description: Approval status of the recipe
+ *           default: draft
+ *         moderationNotes:
+ *           type: string
+ *           description: Notes from admin regarding moderation/rejection
+ *         isActive:
+ *           type: boolean
+ *           description: Whether the recipe is currently active/visible
+ *           default: true
+ *         approvedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Timestamp of when the recipe was approved
+ *           readOnly: true
+ *         approvedBy:
+ *           type: string
+ *           description: ID of the admin who approved the recipe
+ *           readOnly: true
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Timestamp of when the recipe was created
+ *           readOnly: true
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Timestamp of when the recipe was last updated
+ *           readOnly: true
+ */
 export interface IRecipe extends Document {
   name: string;
   description: string;
