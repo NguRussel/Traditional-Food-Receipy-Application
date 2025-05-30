@@ -13,6 +13,7 @@ import {
   getRecipesByRegion,
   getRecipesByTribe,
   trackRecipeView,
+  getRelatedRecipes,
 } from '../controllers/recipeController';
 
 // TODO: Add authentication and authorization middleware
@@ -49,5 +50,8 @@ router.route('/:id')
 
 // Track recipe view
 router.post('/:id/view', trackRecipeView);
+
+// Get related recipes
+router.get('/:id/related', getRelatedRecipes);
 
 export default router; 

@@ -418,4 +418,55 @@ export const trackRecipeView = asyncHandler(async (req: Request, res: Response, 
     message: 'Recipe view tracked successfully', 
     data: { views: recipe.views } // Optionally return the new view count
   });
+});
+
+// @desc    Get related recipes
+// @route   GET /api/v1/recipes/:id/related
+// @access  Public
+export const getRelatedRecipes = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const { limit = 5 } = req.query; // Default to 5 related recipes
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).json({ success: false, message: 'Invalid Recipe ID' });
+    return;
+  }
+
+  const originalRecipe = await RecipeModel.findById(id);
+
+  if (!originalRecipe) {
+    res.status(404).json({ success: false, message: 'Original recipe not found' });
+    return;
+  }
+
+  const limitNumber = Number(limit);
+
+  // Build the query for related recipes
+  const relatedQuery: any = {
+    _id: { $ne: originalRecipe._id }, // Exclude the original recipe itself
+    status: 'approved',
+    isActive: true,
+    $or: [
+      { 'tags.categories': { $in: originalRecipe.tags.categories } },
+      { 'tags.region': originalRecipe.tags.region },
+      // We could also add recipes from the same chef, if desired:
+      // { chefId: originalRecipe.chefId }
+    ],
+  };
+
+  // If the original recipe has a tribe, also consider recipes from the same tribe
+  if (originalRecipe.tags.tribe) {
+    relatedQuery.$or.push({ 'tags.tribe': originalRecipe.tags.tribe });
+  }
+
+  const relatedRecipes = await RecipeModel.find(relatedQuery)
+    .populate('chefId', 'name avatar')
+    .sort({ 'ratings.average': -1, createdAt: -1 }) // Sort by popularity, then recency
+    .limit(limitNumber);
+
+  res.status(200).json({
+    success: true,
+    count: relatedRecipes.length,
+    data: relatedRecipes,
+  });
 }); 
