@@ -1,16 +1,47 @@
 import { Request, Response } from 'express';
 import asyncHandler from '../utils/asyncHandler';
 import ReviewModel, { IReview } from '../models/Review';
+import { Types } from 'mongoose'; // Import Types for ObjectId validation/casting
+import CustomError from '../utils/CustomError';
 // import { IAuthRequest } from '../middleware/authMiddleware'; // Will be needed later for auth
 
 // @desc    Create a new review
 // @route   POST /api/v1/reviews
 // @access  Private (User must be authenticated)
 export const createReview = asyncHandler(async (req: Request, res: Response) => {
-  // const { recipeId, rating, comment } = req.body;
-  // const userId = (req as IAuthRequest).user.id; // Assuming IAuthRequest with user.id
-  // Logic to create review, ensuring user hasn't reviewed this recipe before will be in model/schema index
-  res.status(201).json({ message: 'POST /api/v1/reviews - Placeholder for createReview' });
+  const { recipeId, userId, rating, comment } = req.body;
+
+  // Basic validation (more robust validation will be done by middleware later)
+  if (!recipeId || !userId || !rating) {
+    throw new CustomError('Missing required fields: recipeId, userId, and rating are required.', 400);
+  }
+  if (!Types.ObjectId.isValid(recipeId)) {
+    throw new CustomError('Invalid recipeId format.', 400);
+  }
+  if (!Types.ObjectId.isValid(userId)) {
+    throw new CustomError('Invalid userId format.', 400);
+  }
+  if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+    throw new CustomError('Rating must be a number between 1 and 5.', 400);
+  }
+
+  // For now, userId comes from req.body. Later, it will be from (req as IAuthRequest).user.id;
+  const reviewData: Partial<IReview> = {
+    recipeId: new Types.ObjectId(recipeId),
+    userId: new Types.ObjectId(userId),
+    rating,
+  };
+  if (comment) {
+    reviewData.comment = comment;
+  }
+
+  const newReview = await ReviewModel.create(reviewData);
+
+  res.status(201).json({ 
+    success: true, 
+    message: 'Review created successfully', 
+    data: newReview 
+  });
 });
 
 // @desc    Get all reviews for a specific recipe

@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import reviewRoutes from './routes/reviewRoutes'; // Will be added later
 // import { AuthError } from './middleware/authMiddleware'; // Will be added later
+import CustomError from './utils/CustomError'; // Import CustomError
 
 dotenv.config();
 
@@ -39,14 +40,35 @@ app.use('/api/v1/reviews', reviewRoutes);
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {
   console.error("Global Error Handler caught:", err.stack);
   
-  // if (err instanceof AuthError) { // Will be uncommented later
+  if (err instanceof CustomError) { // Handle CustomError first
+    res.status(err.statusCode).json({ success: false, message: err.message });
+    return;
+  }
+  // if (err instanceof AuthError) { // Will be uncommented later for auth
   //   res.status(err.statusCode).json({ success: false, message: err.message });
   //   return;
   // }
   
+  // Handle Mongoose validation errors (e.g. unique index violation)
+  if (err.name === 'ValidationError') {
+    res.status(400).json({ success: false, message: err.message, errors: err.errors });
+    return;
+  }
+  if (err.code && err.code === 11000) { // Mongoose duplicate key error
+    const field = Object.keys(err.keyValue)[0];
+    const value = err.keyValue[field];
+    res.status(409).json({ 
+        success: false, 
+        message: `Duplicate key error: An entry with ${field} '${value}' already exists.`, 
+        field 
+    });
+    return;
+  }
+
   if (res.headersSent) {
     return next(err);
   }
+  
   res.status(500).json({ success: false, message: 'Internal Server Error' });
 };
 app.use(globalErrorHandler);
