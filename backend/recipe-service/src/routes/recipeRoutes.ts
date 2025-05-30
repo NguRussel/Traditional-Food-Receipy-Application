@@ -14,6 +14,7 @@ import {
   getRecipesByTribe,
   trackRecipeView,
   getRelatedRecipes,
+  // Admin controllers are now in adminRecipeRoutes.ts
 } from '../controllers/recipeController';
 
 // TODO: Add authentication and authorization middleware

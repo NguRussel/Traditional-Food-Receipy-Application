@@ -31,8 +31,11 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // Recipe Routes
-import recipeRoutes from './routes/recipeRoutes'; // Adjusted path
-app.use('/api/v1/recipes', recipeRoutes);
+import recipeRoutes from './routes/recipeRoutes';
+import adminRecipeRoutes from './routes/adminRecipeRoutes'; // Import admin routes
+
+app.use('/api/v1/recipes', recipeRoutes); // General recipe routes
+app.use('/api/v1/recipes/admin', adminRecipeRoutes); // Admin-specific recipe routes
 
 // Global Error Handler
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {

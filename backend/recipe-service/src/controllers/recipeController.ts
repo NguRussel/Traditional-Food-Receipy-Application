@@ -469,4 +469,111 @@ export const getRelatedRecipes = asyncHandler(async (req: Request, res: Response
     count: relatedRecipes.length,
     data: relatedRecipes,
   });
+});
+
+// ADMIN-SPECIFIC CONTROLLERS
+
+// @desc    Get all recipes pending approval
+// @route   GET /api/v1/recipes/admin/pending
+// @access  Private (Admin only)
+export const getPendingRecipes = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  // TODO: Add authorization to ensure only admins can access
+  const { page = 1, limit = 10 } = req.query;
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const query = { status: 'pending', isActive: true };
+
+  const recipes = await RecipeModel.find(query)
+                            .populate('chefId', 'name email') // Populate chef details for admin review
+                            .sort({ createdAt: 1 }) // Show oldest pending first
+                            .skip(skip)
+                            .limit(limitNumber);
+  
+  const totalRecipes = await RecipeModel.countDocuments(query);
+
+  res.status(200).json({
+    success: true,
+    count: recipes.length,
+    totalPages: Math.ceil(totalRecipes / limitNumber),
+    currentPage: pageNumber,
+    data: recipes,
+  });
+});
+
+// @desc    Approve a recipe
+// @route   PUT /api/v1/recipes/admin/:id/approve
+// @access  Private (Admin only)
+export const approveRecipe = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  // TODO: Add authorization to ensure only admins can access
+  // TODO: Get adminId from authenticated user (e.g., req.user.id)
+  const adminIdPlaceholder = new mongoose.Types.ObjectId(); // Placeholder
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).json({ success: false, message: 'Invalid Recipe ID' });
+    return;
+  }
+
+  const recipe = await RecipeModel.findByIdAndUpdate(
+    id,
+    {
+      status: 'approved',
+      approvedAt: new Date(),
+      approvedBy: adminIdPlaceholder, // Replace with actual adminId from auth
+      moderationNotes: 'Recipe approved by admin.' // Or allow admin to pass notes
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (!recipe) {
+    res.status(404).json({ success: false, message: 'Recipe not found or could not be updated' });
+    return;
+  }
+
+  // TODO: Optionally, send a notification to the chef whose recipe was approved.
+
+  res.status(200).json({ success: true, message: 'Recipe approved successfully', data: recipe });
+});
+
+// @desc    Reject a recipe
+// @route   PUT /api/v1/recipes/admin/:id/reject
+// @access  Private (Admin only)
+export const rejectRecipe = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  // TODO: Add authorization to ensure only admins can access
+  // TODO: Get adminId from authenticated user (e.g., req.user.id)
+  const adminIdPlaceholder = new mongoose.Types.ObjectId(); // Placeholder
+  const { id } = req.params;
+  const { moderationNotes } = req.body; // Admin should provide a reason for rejection
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).json({ success: false, message: 'Invalid Recipe ID' });
+    return;
+  }
+
+  if (!moderationNotes || typeof moderationNotes !== 'string' || moderationNotes.trim() === '') {
+    res.status(400).json({ success: false, message: 'Moderation notes are required for rejection' });
+    return;
+  }
+
+  const recipe = await RecipeModel.findByIdAndUpdate(
+    id,
+    {
+      status: 'rejected',
+      moderationNotes: moderationNotes,
+      approvedAt: undefined, // Clear any previous approval date
+      approvedBy: undefined    // Clear any previous approver
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (!recipe) {
+    res.status(404).json({ success: false, message: 'Recipe not found or could not be updated' });
+    return;
+  }
+
+  // TODO: Optionally, send a notification to the chef whose recipe was rejected, including moderationNotes.
+
+  res.status(200).json({ success: true, message: 'Recipe rejected successfully', data: recipe });
 }); 
