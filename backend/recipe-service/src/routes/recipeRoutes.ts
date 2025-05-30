@@ -12,6 +12,7 @@ import {
   getRecipesByCategory,
   getRecipesByRegion,
   getRecipesByTribe,
+  trackRecipeView,
 } from '../controllers/recipeController';
 
 // TODO: Add authentication and authorization middleware
@@ -45,5 +46,8 @@ router.route('/:id')
   .get(getRecipeById)
   .put(/*protect, authorize('chef', 'admin'),*/ updateRecipe) // Example for protected route
   .delete(/*protect, authorize('chef', 'admin'),*/ deleteRecipe); // Example for protected route
+
+// Track recipe view
+router.post('/:id/view', trackRecipeView);
 
 export default router; 
