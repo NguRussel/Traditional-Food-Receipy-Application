@@ -16,6 +16,7 @@ import {
   getRelatedRecipes,
   // Admin controllers are now in adminRecipeRoutes.ts
 } from '../controllers/recipeController';
+import { protect, authorize, IAuthRequest } from '../middleware/authMiddleware'; // Import auth middleware
 
 // TODO: Add authentication and authorization middleware
 // import { protect, authorize } from '../middleware/authMiddleware'; // Example
@@ -41,13 +42,13 @@ router.get('/tribe/:tribe', getRecipesByTribe);
 
 // CRUD Operations
 router.route('/')
-  .post(/*protect, authorize('chef'),*/ createRecipe) // Example for protected route
+  .post(protect, authorize('chef'), createRecipe) // Apply protect and authorize
   .get(getAllRecipes);
 
 router.route('/:id')
   .get(getRecipeById)
-  .put(/*protect, authorize('chef', 'admin'),*/ updateRecipe) // Example for protected route
-  .delete(/*protect, authorize('chef', 'admin'),*/ deleteRecipe); // Example for protected route
+  .put(protect, authorize('chef', 'admin'), updateRecipe) // Apply protect and authorize
+  .delete(protect, authorize('chef', 'admin'), deleteRecipe); // Apply protect and authorize
 
 // Track recipe view
 router.post('/:id/view', trackRecipeView);
