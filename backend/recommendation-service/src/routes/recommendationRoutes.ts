@@ -4,13 +4,15 @@ import {
   getForYouRecommendations, 
   getSimilarRecipes,
   getTrendingRecipes,
-  getRecipesByIngredients
+  getRecipesByIngredients,
+  getUserTasteProfile
 } from '../controllers/interactionController';
 import {
   validateTrackInteraction, 
   handleValidationErrors,
   validateMongoIdParam,
-  validateIngredientsQueryParam
+  validateIngredientsQueryParam,
+  validateUserIdQueryParam
 } from '../middleware/validationMiddleware';
 
 // We will add validation middleware later
@@ -35,8 +37,8 @@ router.post(
 // @access  Private (currently expects userId as query param, ideally from auth)
 router.get(
     '/for-you',
-    // TODO: Add validation if userId is a query param (e.g., isMongoId)
-    // TODO: Add authentication middleware (e.g., protect) to get userId from req.user
+    validateUserIdQueryParam, // Added validation for userId query param
+    handleValidationErrors,
     getForYouRecommendations
 );
 
@@ -69,6 +71,17 @@ router.get(
     validateIngredientsQueryParam,
     handleValidationErrors,
     getRecipesByIngredients
+);
+
+// GET /user-taste-profile
+// @desc    Get a user's taste profile
+// @route   GET /api/v1/recommendations/user-taste-profile
+// @access  Private (expects userId as query param)
+router.get(
+    '/user-taste-profile',
+    validateUserIdQueryParam, // Validate the userId query parameter
+    handleValidationErrors,
+    getUserTasteProfile
 );
 
 // Other recommendation routes will be added here:

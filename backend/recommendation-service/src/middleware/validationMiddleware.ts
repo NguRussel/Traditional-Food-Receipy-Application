@@ -62,4 +62,10 @@ export const validateIngredientsQueryParam: ValidationChain[] = [
       }
       return true;
     })
+];
+
+export const validateUserIdQueryParam: ValidationChain[] = [
+  query('userId')
+    .notEmpty().withMessage('userId query parameter is required.')
+    .isMongoId().withMessage('userId query parameter must be a valid MongoDB ObjectId.')
 ]; 
