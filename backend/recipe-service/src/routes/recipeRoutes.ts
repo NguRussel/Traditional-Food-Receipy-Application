@@ -6,6 +6,7 @@ import {
   updateRecipe,
   deleteRecipe,
   searchRecipes,
+  getRecipesByChef,
 } from '../controllers/recipeController';
 
 // TODO: Add authentication and authorization middleware
@@ -15,6 +16,9 @@ const router = express.Router();
 
 // Search Route (should be defined before routes with /:id)
 router.get('/search', searchRecipes);
+
+// Get recipes by Chef
+router.get('/chef/:chefId', getRecipesByChef);
 
 // CRUD Operations
 router.route('/')

@@ -188,4 +188,49 @@ export const searchRecipes = asyncHandler(async (req: Request, res: Response, ne
     currentPage: pageNumber,
     data: recipes,
   });
+});
+
+// @desc    Get recipes by Chef ID
+// @route   GET /api/v1/recipes/chef/:chefId
+// @access  Public
+export const getRecipesByChef = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const { chefId } = req.params;
+  const { page = 1, limit = 10 } = req.query; // Optional pagination
+
+  if (!mongoose.Types.ObjectId.isValid(chefId)) {
+    res.status(400).json({ success: false, message: 'Invalid Chef ID' });
+    return;
+  }
+
+  const query: any = { 
+    chefId: new mongoose.Types.ObjectId(chefId),
+    status: 'approved', // Only show approved recipes
+    isActive: true 
+  };
+
+  const pageNumber = Number(page);
+  const limitNumber = Number(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const recipes = await RecipeModel.find(query)
+                            .populate('chefId', 'name avatar') // Should still populate to get chef details if needed on the recipe card
+                            .sort({ createdAt: -1 })
+                            .skip(skip)
+                            .limit(limitNumber);
+  
+  const totalRecipes = await RecipeModel.countDocuments(query);
+  
+  if (!recipes || recipes.length === 0) {
+    // It's better to return an empty array than a 404 if the chef is valid but has no recipes
+    res.status(200).json({ success: true, count: 0, totalPages: 0, currentPage: pageNumber, data: [] });
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    count: recipes.length,
+    totalPages: Math.ceil(totalRecipes / limitNumber),
+    currentPage: pageNumber,
+    data: recipes,
+  });
 }); 
