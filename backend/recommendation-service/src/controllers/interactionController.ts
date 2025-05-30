@@ -297,4 +297,77 @@ export const getRecipesByIngredients = asyncHandler(async (req: Request, res: Re
     count: recipesToReturn.length,
     data: recipesToReturn,
   });
+});
+
+/**
+ * @desc    Get a user's taste profile based on their interactions
+ * @route   GET /api/v1/recommendations/user-taste-profile
+ * @access  Private (requires user ID)
+ */
+export const getUserTasteProfile = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  const userId = req.query.userId as string; // Or req.user.id if auth is in place
+
+  if (!userId) {
+    res.status(400).json({ success: false, message: 'User ID is required to get a taste profile.' });
+    return;
+  }
+
+  // --- Basic Placeholder Logic for Taste Profile ---
+  // 1. Fetch all (or a significant number of) interactions for the user.
+  const userInteractions = await UserInteractionModel.find({ userId: userId })
+    .sort({ createdAt: -1 })
+    .limit(200) // Limit to a reasonable number for this placeholder
+    .select('recipeId interactionType rating')
+    .lean();
+
+  if (!userInteractions || userInteractions.length === 0) {
+    res.status(200).json({ 
+      success: true, 
+      message: 'No interaction history found for this user to build a taste profile. Start interacting with recipes!',
+      data: { interactionSummary: {}, recentlyInteractedRecipeIds: [] }
+    });
+    return;
+  }
+
+  // 2. Summarize interactions
+  const interactionSummary: { [key: string]: number } = {};
+  userInteractions.forEach(interaction => {
+    interactionSummary[interaction.interactionType] = (interactionSummary[interaction.interactionType] || 0) + 1;
+    if (interaction.interactionType === 'rating' && interaction.rating) {
+      const ratingKey = `rated_${interaction.rating}_star`;
+      interactionSummary[ratingKey] = (interactionSummary[ratingKey] || 0) + 1;
+    }
+  });
+
+  // 3. Get a list of unique recipe IDs the user has positively interacted with
+  const positiveRecipeIds = [
+    ...new Set(
+      userInteractions
+        .filter(i => 
+          i.interactionType === 'like' || 
+          i.interactionType === 'save' || 
+          i.interactionType === 'cook' || 
+          (i.interactionType === 'rating' && i.rating && i.rating >= 4)
+        )
+        .map(i => i.recipeId.toString())
+    )
+  ];
+
+  // In a real system, you'd analyze these interactions further:
+  // - Aggregate common tags/categories/ingredients from the interacted recipes (needs recipe data).
+  // - Identify preferred cooking times, difficulties etc.
+
+  res.status(200).json({
+    success: true,
+    message: 'User taste profile retrieved (placeholder logic based on interaction counts)',
+    data: {
+      userId: userId,
+      totalInteractions: userInteractions.length,
+      interactionSummary: interactionSummary,
+      distinctPositivelyInteractedRecipes: positiveRecipeIds.length,
+      recentPositiveInteractionsRecipeIds: positiveRecipeIds.slice(0, 20), // Show some examples
+      // Note: Further analysis would require fetching details for these recipe IDs from RecipeService
+      // to identify common attributes (tags, ingredients, cuisine types etc.)
+    },
+  });
 }); 
