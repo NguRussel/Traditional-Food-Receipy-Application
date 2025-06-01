@@ -20,4 +20,9 @@ lerna-debug.log*
 *.ntvs*
 *.njsproj
 *.sln
-*.sw? 
+*.sw?
+
+# Firebase service account keys
+*-firebase-adminsdk-*.json
+src/config/*-firebase-adminsdk-*.json
+src/config/*.json # More general if config dir only holds secrets 
