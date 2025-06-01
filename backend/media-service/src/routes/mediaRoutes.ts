@@ -33,12 +33,91 @@ import {
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Images
+ *   description: Image management operations
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Videos
+ *   description: Video management operations
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Documents
+ *   description: Document management operations (e.g., verification)
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Admin
+ *   description: Admin-specific media operations
+ */
+
 // For file uploads, we will need multer middleware. Configuration will be added later.
 // const imageUpload = configureMulter(/* image options */); 
 // const videoUpload = configureMulter(/* video options */);
 // const documentUpload = configureMulter(/* document options */);
 
 // Image Management
+/**
+ * @swagger
+ * /images/upload:
+ *   post:
+ *     summary: Upload a recipe image
+ *     tags: [Images]
+ *     security:
+ *       - apiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image: 
+ *                 type: string
+ *                 format: binary
+ *                 description: The recipe image file to upload.
+ *               category: # Example of an additional form field, though our controller deduces it
+ *                 type: string
+ *                 enum: [recipe]
+ *                 default: recipe
+ *                 description: Category of the image (currently fixed to 'recipe' by this endpoint).
+ *     responses:
+ *       '201':
+ *         description: Image uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 message: { type: string, example: Recipe image uploaded successfully. }
+ *                 data: { $ref: '#/components/schemas/Media' }
+ *       '400':
+ *         description: Bad request (e.g., no file, invalid file type, validation error)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ValidationErrorResponse' } # Or ErrorResponse
+ *       '401':
+ *         description: Unauthorized (e.g., x-user-id header missing)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       '500':
+ *         description: Internal server error (e.g., Firebase issue, database issue)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ */
 router.post(
   '/images/upload',
   protect,
@@ -104,6 +183,63 @@ router.post(
 );
 
 // Admin-specific endpoints
+/**
+ * @swagger
+ * /flagged:
+ *   get:
+ *     summary: Get all flagged media items (paginated)
+ *     tags: [Admin]
+ *     security:
+ *       - apiKeyAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page.
+ *     responses:
+ *       '200':
+ *         description: A list of flagged media items.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status: { type: string, example: success }
+ *                 message: { type: string, example: Flagged media retrieved successfully. }
+ *                 data: 
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/Media' }
+ *                 pagination: 
+ *                   type: object
+ *                   properties:
+ *                     currentPage: { type: integer, example: 1 }
+ *                     totalPages: { type: integer, example: 5 }
+ *                     totalItems: { type: integer, example: 48 }
+ *                     itemsPerPage: { type: integer, example: 10 }
+ *       '401':
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       '403':
+ *         description: Forbidden (user is not an admin)
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ *       '500':
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/ErrorResponse' }
+ */
 router.get(
   '/flagged',
   protect,
