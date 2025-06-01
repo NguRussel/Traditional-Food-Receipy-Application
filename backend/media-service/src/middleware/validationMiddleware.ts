@@ -17,7 +17,7 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
   next();
 };
 
-export const validateMongoIdParam = (paramName: string): ValidationChain => {
+export const validateMongoIdParam = (paramName: string = 'id'): ValidationChain => {
   return param(paramName).isMongoId().withMessage(`${paramName} must be a valid MongoDB ObjectId`);
 };
 

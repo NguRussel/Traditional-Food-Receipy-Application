@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import mediaRoutes from './routes/mediaRoutes';
 import CustomError from './utils/CustomError';
 import { AuthError } from './middleware/authMiddleware';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './config/swaggerConfig';
 
 dotenv.config();
 
@@ -11,6 +13,9 @@ const app: Application = express();
 const PORT = process.env.MEDIA_SERVICE_PORT || 8005;
 
 app.use(express.json());
+
+// Swagger Docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Mount Routers
 app.use('/api/v1/media', mediaRoutes);
