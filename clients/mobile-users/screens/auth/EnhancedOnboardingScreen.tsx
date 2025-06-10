@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   FlatList,
   StatusBar,
-  Animated,
   Image,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,11 +24,10 @@ interface OnboardingItem {
   title: string;
   subtitle: string;
   description: string;
-  gradientColors: string[];
+  gradientColors: [string, string, ...string[]];
   icon: keyof typeof Ionicons.glyphMap;
   iconSize: number;
   accent: string;
-  features: string[];
 }
 
 const onboardingData: OnboardingItem[] = [
@@ -39,9 +38,8 @@ const onboardingData: OnboardingItem[] = [
     description: 'Preserve and share your cultural identity through food. Cook traditional meals and create lasting memories with authentic Cameroonian recipes.',
     gradientColors: ['#FF6B35', '#FF8F65'],
     icon: 'heart-circle',
-    iconSize: 120,
+    iconSize: 140,
     accent: '#FFE5DC',
-    features: ['Cultural Recipes', 'Family Traditions'],
   },
   {
     id: '2',
@@ -50,9 +48,8 @@ const onboardingData: OnboardingItem[] = [
     description: 'Follow step-by-step video tutorials from verified Cameroonian chefs and home cooks sharing their family secrets and traditional techniques.',
     gradientColors: ['#FF8960', '#FFB088'],
     icon: 'play-circle',
-    iconSize: 120,
+    iconSize: 140,
     accent: '#FFE8E0',
-    features: ['Video Tutorials', 'Expert Guidance'],
   },
   {
     id: '3',
@@ -61,9 +58,8 @@ const onboardingData: OnboardingItem[] = [
     description: 'Explore traditional recipes from all 10 regions of Cameroon. Learn to cook dishes like Ndolé, Achu, and more, passed down through generations.',
     gradientColors: ['#FFA680', '#FFCDB2'],
     icon: 'restaurant',
-    iconSize: 120,
+    iconSize: 140,
     accent: '#FFF0EB',
-    features: ['Regional Dishes', '10 Regions'],
   },
 ];
 
@@ -73,13 +69,12 @@ interface Props {
   navigation: OnboardingScreenNavigationProp;
 }
 
-export default function OnboardingScreen({ navigation }: Props) {
+export default function EnhancedOnboardingScreen({ navigation }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     // Animate in the content when component mounts or index changes
@@ -100,25 +95,6 @@ export default function OnboardingScreen({ navigation }: Props) {
         useNativeDriver: true,
       }),
     ]).start();
-
-    // Pulse animation for the icon
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulseAnimation.start();
-
-    return () => pulseAnimation.stop();
   }, [currentIndex]);
 
   const resetAnimations = () => {
@@ -168,15 +144,7 @@ export default function OnboardingScreen({ navigation }: Props) {
           },
         ]}
       >
-        <Animated.View 
-          style={[
-            styles.imagePlaceholder, 
-            { 
-              backgroundColor: item.accent,
-              transform: [{ scale: pulseAnim }],
-            }
-          ]}
-        >
+        <View style={[styles.imagePlaceholder, { backgroundColor: item.accent }]}>
           <View style={styles.iconContainer}>
             <Ionicons name={item.icon} size={item.iconSize} color={item.gradientColors[0]} />
           </View>
@@ -184,7 +152,8 @@ export default function OnboardingScreen({ navigation }: Props) {
           {/* Pulse animation rings */}
           <View style={[styles.pulseRing, styles.ring1, { borderColor: item.gradientColors[0] }]} />
           <View style={[styles.pulseRing, styles.ring2, { borderColor: item.gradientColors[0] }]} />
-        </Animated.View>
+          <View style={[styles.pulseRing, styles.ring3, { borderColor: item.gradientColors[0] }]} />
+        </View>
       </Animated.View>
       
       <Animated.View 
@@ -202,12 +171,18 @@ export default function OnboardingScreen({ navigation }: Props) {
         
         {/* Feature indicators */}
         <View style={styles.featureContainer}>
-          {item.features.map((feature, idx) => (
-            <View key={idx} style={styles.featureItem}>
-              <Ionicons name="checkmark-circle" size={18} color="white" />
-              <Text style={styles.featureText}>{feature}</Text>
-            </View>
-          ))}
+          <View style={styles.featureItem}>
+            <Ionicons name="checkmark-circle" size={20} color="white" />
+            <Text style={styles.featureText}>
+              {index === 0 ? 'Cultural Recipes' : index === 1 ? 'Video Tutorials' : 'Regional Dishes'}
+            </Text>
+          </View>
+          <View style={styles.featureItem}>
+            <Ionicons name="checkmark-circle" size={20} color="white" />
+            <Text style={styles.featureText}>
+              {index === 0 ? 'Family Traditions' : index === 1 ? 'Expert Guidance' : '10 Regions'}
+            </Text>
+          </View>
         </View>
       </Animated.View>
     </LinearGradient>
@@ -226,13 +201,13 @@ export default function OnboardingScreen({ navigation }: Props) {
             }
           }}
         >
-          <Animated.View
+          <View
             style={[
               styles.paginationDot,
               {
                 backgroundColor: index === currentIndex ? 'white' : 'rgba(255, 255, 255, 0.4)',
-                width: index === currentIndex ? 28 : 10,
-                height: 10,
+                width: index === currentIndex ? 32 : 12,
+                height: index === currentIndex ? 12 : 12,
               },
             ]}
           />
@@ -287,7 +262,7 @@ export default function OnboardingScreen({ navigation }: Props) {
             </Text>
             <Ionicons 
               name={currentIndex === onboardingData.length - 1 ? 'restaurant' : 'arrow-forward'} 
-              size={20} 
+              size={22} 
               color="white" 
             />
           </LinearGradient>
@@ -333,7 +308,7 @@ const styles = StyleSheet.create({
     width,
     flex: 1,
     justifyContent: 'space-between',
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   decorativeContainer: {
     position: 'absolute',
@@ -345,7 +320,7 @@ const styles = StyleSheet.create({
   decorativeCircle: {
     position: 'absolute',
     borderRadius: 1000,
-    opacity: 0.08,
+    opacity: 0.1,
   },
   circle1: {
     width: 200,
@@ -360,9 +335,9 @@ const styles = StyleSheet.create({
     left: -30,
   },
   circle3: {
-    width: 120,
-    height: 120,
-    top: height * 0.35,
+    width: 100,
+    height: 100,
+    top: height * 0.3,
     right: 20,
   },
   imageContainer: {
@@ -372,16 +347,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: ThemeConfig.spacing.xl,
   },
   imagePlaceholder: {
-    width: 280,
-    height: 280,
-    borderRadius: 140,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 15,
+    elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
-    shadowRadius: 16,
+    shadowRadius: 20,
     position: 'relative',
   },
   iconContainer: {
@@ -391,19 +366,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderWidth: 2,
     borderRadius: 1000,
-    opacity: 0.2,
+    opacity: 0.3,
   },
   ring1: {
-    width: 320,
-    height: 320,
-    top: -20,
-    left: -20,
+    width: 340,
+    height: 340,
+    top: -10,
+    left: -10,
   },
   ring2: {
     width: 360,
     height: 360,
-    top: -40,
-    left: -40,
+    top: -20,
+    left: -20,
+    opacity: 0.2,
+  },
+  ring3: {
+    width: 380,
+    height: 380,
+    top: -30,
+    left: -30,
     opacity: 0.1,
   },
   contentContainer: {
@@ -411,7 +393,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: ThemeConfig.fontWeight.bold,
     color: 'white',
     textAlign: 'center',
@@ -421,7 +403,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   subtitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: ThemeConfig.fontWeight.bold,
     color: 'white',
     textAlign: 'center',
@@ -434,7 +416,7 @@ const styles = StyleSheet.create({
     fontSize: ThemeConfig.fontSize.md,
     color: 'rgba(255, 255, 255, 0.95)',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 26,
     paddingHorizontal: ThemeConfig.spacing.sm,
     marginBottom: ThemeConfig.spacing.lg,
   },
@@ -469,7 +451,7 @@ const styles = StyleSheet.create({
     gap: ThemeConfig.spacing.sm,
   },
   paginationDot: {
-    borderRadius: 5,
+    borderRadius: 6,
   },
   nextButton: {
     width: '100%',
@@ -478,11 +460,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: ThemeConfig.spacing.md,
+    paddingVertical: ThemeConfig.spacing.lg,
     borderRadius: ThemeConfig.borderRadius.large,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    elevation: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

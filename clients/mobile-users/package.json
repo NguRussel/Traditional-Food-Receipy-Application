@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@azure/core-asynciterator-polyfill": "^1.0.2",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-navigation/bottom-tabs": "^7.3.14",
@@ -30,6 +31,7 @@
     "react": "19.0.0",
     "react-native": "0.79.3",
     "react-native-gesture-handler": "^2.25.0",
+    "react-native-get-random-values": "^1.11.0",
     "react-native-paper": "^5.14.5",
     "react-native-qrcode-svg": "^6.3.15",
     "react-native-reanimated": "^3.18.0",

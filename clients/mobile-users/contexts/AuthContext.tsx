@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { supabase, UserRole, UserPermissions, isPlaceholder } from '../lib/supabase';
+import RBACManager, { DEFAULT_PERMISSIONS } from '../lib/rbac';
 
 interface AuthContextType {
   session: Session | null;
@@ -30,9 +31,15 @@ interface AuthContextType {
   updateProfilePhoto: (photoUri: string) => Promise<{ error: any; url?: string }>;
   deleteAccount: () => Promise<{ error: any }>;
   
-  // Role & Permissions
-  userRole: 'user' | 'chef' | 'admin' | null;
-  hasPermission: (permission: string) => boolean;
+  // Role & Permissions (Enhanced RBAC)
+  userRole: UserRole | null;
+  userPermissions: UserPermissions | null;
+  hasPermission: (permission: keyof UserPermissions) => boolean;
+  canAccessScreen: (screenName: string) => boolean;
+  canManageRecipe: (recipeOwnerId: string, action: 'create' | 'edit' | 'delete' | 'approve') => boolean;
+  canManageUser: (targetUserId: string, action: 'view' | 'edit' | 'ban' | 'verify') => boolean;
+  getRoleDisplayName: () => string;
+  getAllowedRoutes: () => string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,14 +48,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<'user' | 'chef' | 'admin' | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userPermissions, setUserPermissions] = useState<UserPermissions | null>(null);
 
   useEffect(() => {
+    if (isPlaceholder) {
+      // Offline mode - no Supabase calls
+      console.log('🔌 Running in offline mode - Supabase features disabled');
+      setSession(null);
+      setUser(null);
+      setUserRole(null);
+      setUserPermissions(null);
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setUserRole(session?.user?.user_metadata?.role ?? null);
+      const role = session?.user?.user_metadata?.role as UserRole | null;
+      setUserRole(role);
+      setUserPermissions(role ? DEFAULT_PERMISSIONS[role] : null);
+      setLoading(false);
+    }).catch((error) => {
+      console.warn('Supabase connection failed:', error.message);
       setLoading(false);
     });
 
@@ -57,7 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setUserRole(session?.user?.user_metadata?.role ?? null);
+        const role = session?.user?.user_metadata?.role as UserRole | null;
+        setUserRole(role);
+        setUserPermissions(role ? DEFAULT_PERMISSIONS[role] : null);
         setLoading(false);
       }
     );
@@ -66,22 +92,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    if (isPlaceholder) {
+      return { error: new Error('Authentication is disabled in offline mode. Please configure Supabase credentials.') };
+    }
+    
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      return { error: error as Error };
+    }
   };
 
   const signUp = async (email: string, password: string, userData?: any) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: userData,
-      },
-    });
-    return { error };
+    if (isPlaceholder) {
+      return { error: new Error('Authentication is disabled in offline mode. Please configure Supabase credentials.') };
+    }
+    
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData,
+        },
+      });
+      return { error };
+    } catch (error) {
+      return { error: error as Error };
+    }
   };
 
   const signOut = async () => {
@@ -313,16 +355,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Role & Permissions
-  const hasPermission = (permission: string): boolean => {
-    if (!user?.user_metadata) return false;
-    
-    // Admin has all permissions
-    if (userRole === 'admin') return true;
-    
-    // Check user permissions
-    const permissions = user.user_metadata.permissions || [];
-    return permissions.includes(permission);
+  // Enhanced RBAC Methods
+  const hasPermission = (permission: keyof UserPermissions): boolean => {
+    if (!userRole || !userPermissions) return false;
+    return RBACManager.hasPermission(userRole, userPermissions, permission);
+  };
+
+  const canAccessScreen = (screenName: string): boolean => {
+    if (!userRole) return false;
+    return RBACManager.canAccessScreen(userRole, screenName);
+  };
+
+  const canManageRecipe = (recipeOwnerId: string, action: 'create' | 'edit' | 'delete' | 'approve'): boolean => {
+    if (!userRole || !user) return false;
+    return RBACManager.canManageRecipe(userRole, userPermissions, recipeOwnerId, user.id, action);
+  };
+
+  const canManageUser = (targetUserId: string, action: 'view' | 'edit' | 'ban' | 'verify'): boolean => {
+    if (!userRole || !user) return false;
+    return RBACManager.canManageUser(userRole, userPermissions, targetUserId, user.id, action);
+  };
+
+  const getRoleDisplayName = (): string => {
+    if (!userRole) return 'Guest';
+    const roleNames = {
+      user: 'Food Lover',
+      chef: 'Chef',
+      admin: 'Administrator'
+    };
+    return roleNames[userRole] || 'Unknown';
+  };
+
+  const getAllowedRoutes = (): string[] => {
+    if (!userRole) return ['Home', 'Login', 'Register'];
+    return RBACManager.getAllowedRoutes(userRole);
   };
 
   const value = {
@@ -330,6 +396,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     loading,
     userRole,
+    userPermissions,
     signIn,
     signUp,
     signOut,
@@ -345,6 +412,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateProfilePhoto,
     deleteAccount,
     hasPermission,
+    canAccessScreen,
+    canManageRecipe,
+    canManageUser,
+    getRoleDisplayName,
+    getAllowedRoutes,
   };
 
   return (

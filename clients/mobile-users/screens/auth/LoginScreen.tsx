@@ -29,7 +29,8 @@ export default function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { signIn, signInWithGoogle } = useAuth();
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -69,6 +70,35 @@ export default function LoginScreen({ navigation }: Props) {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await signInWithGoogle();
+      
+      if (error) {
+        Toast.show({
+          type: 'error',
+          text1: 'Google Sign In Failed',
+          text2: error.message,
+        });
+      } else {
+        Toast.show({
+          type: 'success',
+          text1: 'Welcome back!',
+          text2: 'Successfully signed in with Google',
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'An unexpected error occurred',
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -94,6 +124,25 @@ export default function LoginScreen({ navigation }: Props) {
             <Text style={styles.welcomeSubtitle}>
               Sign in to continue exploring amazing Cameroonian recipes
             </Text>
+          </View>
+
+          {/* Google Sign In Button */}
+          <TouchableOpacity
+            style={[styles.googleButton, googleLoading && styles.googleButtonDisabled]}
+            onPress={handleGoogleSignIn}
+            disabled={googleLoading}
+          >
+            <Ionicons name="logo-google" size={20} color="#4285F4" />
+            <Text style={styles.googleButtonText}>
+              {googleLoading ? 'Signing in with Google...' : 'Continue with Google'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or sign in with email</Text>
+            <View style={styles.dividerLine} />
           </View>
 
           {/* Form */}
@@ -289,5 +338,41 @@ const styles = StyleSheet.create({
     fontSize: ThemeConfig.fontSize.md,
     color: Colors.light.primary,
     fontWeight: ThemeConfig.fontWeight.semibold,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    paddingVertical: ThemeConfig.spacing.md,
+    borderRadius: ThemeConfig.borderRadius.large,
+    marginBottom: ThemeConfig.spacing.lg,
+    ...ThemeConfig.shadows.small,
+  },
+  googleButtonDisabled: {
+    opacity: 0.6,
+  },
+  googleButtonText: {
+    marginLeft: ThemeConfig.spacing.sm,
+    fontSize: ThemeConfig.fontSize.md,
+    fontWeight: ThemeConfig.fontWeight.medium,
+    color: Colors.light.textPrimary,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: ThemeConfig.spacing.xl,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.light.border,
+  },
+  dividerText: {
+    marginHorizontal: ThemeConfig.spacing.md,
+    fontSize: ThemeConfig.fontSize.sm,
+    color: Colors.light.textSecondary,
   },
 }); 

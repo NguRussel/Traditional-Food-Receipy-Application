@@ -25,8 +25,8 @@ This guide will walk you through setting up Supabase for the AFRI-Plates mobile 
 1. **Go to Settings > API**
 2. **Copy the following values:**
    ```env
-   EXPO_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-   EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+   EXPO_PUBLIC_SUPABASE_URL=https://ukgqlevdgxwjezfjpjpk.supabase.co
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6bWRsdWpwcHlzZWlndHJnd3JkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MTc5NzgsImV4cCI6MjA2NDk5Mzk3OH0.fYNsYbSZvDKupIZBTRcqrbHc_gYSQCD1NYq2kKfLC4U
    ```
 3. **Update your `.env` file** with these values
 
