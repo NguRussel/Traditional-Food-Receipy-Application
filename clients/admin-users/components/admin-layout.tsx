@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/sidebar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 
 // Navigation items
@@ -85,6 +85,14 @@ const navigationItems = [
 
 function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = () => {
+    // Clear the authentication cookie
+    document.cookie = 'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+    // Redirect to login page
+    router.push('/login')
+  }
 
   return (
     <Sidebar variant="inset" className="border-r-0">
@@ -138,7 +146,7 @@ function AppSidebar() {
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>
@@ -158,6 +166,15 @@ interface AdminLayoutProps {
 }
 
 export function AdminLayout({ children, title, description }: AdminLayoutProps) {
+  const router = useRouter()
+
+  const handleLogout = () => {
+    // Clear the authentication cookie
+    document.cookie = 'admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+    // Redirect to login page
+    router.push('/login')
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -171,6 +188,10 @@ export function AdminLayout({ children, title, description }: AdminLayoutProps) 
             </div>
             <Button variant="outline" size="icon">
               <Bell className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </header>
