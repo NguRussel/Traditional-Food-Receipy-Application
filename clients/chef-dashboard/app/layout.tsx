@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { SidebarProvider } from "@/components/ui/sidebar"
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Chef Dashboard',
+  description: 'Your culinary command center',
   generator: 'v0.dev',
 }
 
@@ -14,7 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <SidebarProvider>{children}</SidebarProvider>
+      </body>
     </html>
   )
 }
