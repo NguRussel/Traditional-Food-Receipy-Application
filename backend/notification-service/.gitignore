@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+
+# Production
+dist
+
+# Environment files
+.env
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# IDE specific files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Firebase service account keys
+*-firebase-adminsdk-*.json
+src/config/*-firebase-adminsdk-*.json
+src/config/*.json # More general if config dir only holds secrets 

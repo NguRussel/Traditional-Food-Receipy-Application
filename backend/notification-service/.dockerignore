@@ -1,0 +1,19 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+*.md
+.env
+src/
+dist/
+
+# Include the compiled output if not copying from a build stage
+# However, with a multi-stage build copying from /app/dist, 
+# we might not need to explicitly ignore src if COPY . . is before build
+# but it's good practice to keep it clear.
+
+# If your build process outputs to dist and you copy dist, 
+# you might not need to explicitly ignore src, but it doesn't hurt.
+# If copying everything then building, ensure src is available. 
