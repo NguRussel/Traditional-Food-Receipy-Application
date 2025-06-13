@@ -50,9 +50,20 @@ app.use('/api-docs/ai-assistant-service', swaggerUi.serve, swaggerUi.setup(swagg
     // customSiteTitle: "AI Assistant Service API Docs"
 }));
 
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'AI Assistant Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
+});
+
 // Mount API Routes
-app.use('/api/v1/ai-assistant', aiAssistantRoutes);
-app.use('/api/v1/ai-assistant/admin', adminAIAssistantRoutes);
+app.use('/api/ai-assistant', aiAssistantRoutes);
+app.use('/api/ai-assistant/admin', adminAIAssistantRoutes);
 
 // Not Found Middleware
 app.use((req: Request, res: Response, next: NextFunction) => {

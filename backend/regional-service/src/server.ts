@@ -44,12 +44,23 @@ mongoose.connect(MONGO_URI)
     });
 
 // Mount Routers
-app.use('/api/v1/regional', regionalRoutes);
-app.use('/api/v1/admin/regional', adminRegionalRoutes); // Prefixed for admin scope
+app.use('/api/regional', regionalRoutes);
+app.use('/api/regional/admin', adminRegionalRoutes); // Prefixed for admin scope
 
 // Simple base route
 app.get('/', (req: Request, res: Response) => {
-    res.send('Regional Service is running!');
+  res.send('Regional Service is running!');
+});
+
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Regional Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
 });
 
 // Global Error Handler

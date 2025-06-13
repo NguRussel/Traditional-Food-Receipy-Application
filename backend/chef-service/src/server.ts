@@ -44,12 +44,23 @@ mongoose.connect(MONGO_URI)
     });
 
 // Mount Routers
-app.use('/api/v1/chefs', chefRoutes);
-app.use('/api/v1/admin/chefs', adminChefRoutes);
+app.use('/api/chefs', chefRoutes);
+app.use('/api/chefs/admin', adminChefRoutes);
 
 // Simple base route
 app.get('/', (req: Request, res: Response) => {
-    res.send('Chef Service is running!');
+  res.send('Chef Service is running!');
+});
+
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Chef Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
 });
 
 // Global Error Handler

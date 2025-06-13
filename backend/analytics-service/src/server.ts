@@ -51,9 +51,20 @@ app.use('/api-docs/analytics-service', swaggerUi.serve, swaggerUi.setup(swaggerS
     customSiteTitle: "Analytics Service API Docs"
 }));
 
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Analytics Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
+});
+
 // Mount API Routes
-app.use('/api/v1/analytics', analyticsRoutes);
-app.use('/api/v1/analytics/admin', adminAnalyticsRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/analytics/admin', adminAnalyticsRoutes);
 
 // Not Found Middleware
 interface IError extends Error {

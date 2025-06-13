@@ -36,12 +36,23 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Recipe Service is running with TypeScript!');
 });
 
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Recipe Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
+});
+
 // Recipe Routes
 import recipeRoutes from './routes/recipeRoutes';
 import adminRecipeRoutes from './routes/adminRecipeRoutes'; // Import admin routes
 
-app.use('/api/v1/recipes', recipeRoutes); // General recipe routes
-app.use('/api/v1/recipes/admin', adminRecipeRoutes); // Admin-specific recipe routes
+app.use('/api/recipes', recipeRoutes); // General recipe routes
+app.use('/api/recipes/admin', adminRecipeRoutes); // Admin-specific recipe routes
 
 // Global Error Handler
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {

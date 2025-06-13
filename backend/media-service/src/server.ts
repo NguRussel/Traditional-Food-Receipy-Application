@@ -17,8 +17,19 @@ app.use(express.json());
 // Swagger Docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Media Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
+});
+
 // Mount Routers
-app.use('/api/v1/media', mediaRoutes);
+app.use('/api/media', mediaRoutes);
 
 // Global Error Handler
 interface GlobalError extends Error {

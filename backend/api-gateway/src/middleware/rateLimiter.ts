@@ -3,17 +3,12 @@ import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 // Rate limiter configuration
 const rateLimiter = new RateLimiterMemory({
-  keyGenerator: (req: Request) => {
-    // Use IP address as the key for rate limiting
-    return req.ip || req.connection.remoteAddress || 'unknown';
-  },
   points: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // Number of requests
   duration: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000') / 1000, // Per 15 minutes (in seconds)
 });
 
 // Different rate limits for different endpoints
 const strictRateLimiter = new RateLimiterMemory({
-  keyGenerator: (req: Request) => req.ip || 'unknown',
   points: 10, // Stricter limit for sensitive endpoints
   duration: 60, // Per minute
 });
@@ -31,7 +26,9 @@ export const rateLimiterMiddleware = async (
     
     const limiter = isAuthEndpoint ? strictRateLimiter : rateLimiter;
     
-    await limiter.consume(req.ip || 'unknown');
+    // Use IP address as the key for rate limiting
+    const key = req.ip || req.connection?.remoteAddress || 'unknown';
+    await limiter.consume(key);
     next();
   } catch (rejRes: any) {
     const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;

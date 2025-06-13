@@ -46,9 +46,20 @@ mongoose.connect(MONGO_URI)
         process.exit(1);
     });
 
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Admin Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
+});
+
 // Mount Routers
-app.use('/api/v1/auth', authRoutes); 
-app.use('/api/v1/admins', adminRoutes); // Mount adminRoutes under /api/v1/admins
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes); // Mount adminRoutes under /api/admin
 
 // Simple base route
 app.get('/', (req: Request, res: Response) => {

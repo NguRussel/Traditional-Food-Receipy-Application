@@ -36,9 +36,20 @@ app.get('/', (req: Request, res: Response) => {
   res.send('User Service is running!');
 });
 
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'User Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
+});
+
 // Mount Routes
-app.use('/api/v1/users', userRoutes); // Mount user routes
-app.use('/api/v1/users/admin', adminUserRoutes); // Mount admin user routes
+app.use('/api/users', userRoutes); // Mount user routes
+app.use('/api/users/admin', adminUserRoutes); // Mount admin user routes
 
 // Swagger UI Setup
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

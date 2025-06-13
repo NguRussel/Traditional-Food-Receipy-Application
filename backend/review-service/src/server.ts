@@ -32,8 +32,19 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Review Service is running with TypeScript!');
 });
 
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Review Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
+});
+
 // Review Routes (will be uncommented and used later)
-app.use('/api/v1/reviews', reviewRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Global Error Handler
 const globalErrorHandler: ErrorRequestHandler = (err, req, res, next) => {

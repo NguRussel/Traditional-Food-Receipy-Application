@@ -118,6 +118,11 @@ app.get('/api/v1/status', (req: Request, res: Response) => {
       url: process.env.ADMIN_SERVICE_URL || 'http://localhost:8012',
       status: 'unknown',
       description: 'Admin panel and content moderation'
+    },
+    'meal-planner-service': {
+      url: process.env.MEAL_PLANNER_SERVICE_URL || 'http://localhost:8013',
+      status: 'unknown',
+      description: 'AI-powered meal planning and nutrition analysis'
     }
   };
 
@@ -151,7 +156,13 @@ const createProxyOptions = (target: string, pathRewrite: Record<string, string>)
 });
 
 // Define service routes
-const serviceRoutes = [
+interface ServiceRoute {
+  path: string;
+  target: string;
+  pathRewrite: Record<string, string>;
+}
+
+const serviceRoutes: ServiceRoute[] = [
   {
     path: '/api/v1/users',
     target: process.env.USER_SERVICE_URL || 'http://localhost:8002',
@@ -211,6 +222,11 @@ const serviceRoutes = [
     path: '/api/v1/admin',
     target: process.env.ADMIN_SERVICE_URL || 'http://localhost:8012',
     pathRewrite: { '^/api/v1/admin': '/api/admin' }
+  },
+  {
+    path: '/api/v1/meal-plans',
+    target: process.env.MEAL_PLANNER_SERVICE_URL || 'http://localhost:8013',
+    pathRewrite: { '^/api/v1/meal-plans': '/api/meal-plans' }
   }
 ];
 

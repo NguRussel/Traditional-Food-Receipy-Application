@@ -453,6 +453,36 @@ services:
       timeout: 10s
       retries: 3
 
+  meal-planner-service:
+    build:
+      context: ./backend/meal-planner-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-meal-planner-service
+    restart: unless-stopped
+    ports:
+      - "8013:8013"
+    environment:
+      - NODE_ENV=development
+      - PORT=8013
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/meal-planner-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8013/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Monitoring Services
   prometheus:
     image: prom/prometheus:latest

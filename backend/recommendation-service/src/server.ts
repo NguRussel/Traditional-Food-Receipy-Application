@@ -34,8 +34,19 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Recommendation Service is running with TypeScript!');
 });
 
+// Health check endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    service: 'Recommendation Service',
+    version: '1.0.0',
+    uptime: process.uptime()
+  });
+});
+
 // Recommendation Routes
-app.use('/api/v1/recommendations', recommendationRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // Swagger UI setup
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
