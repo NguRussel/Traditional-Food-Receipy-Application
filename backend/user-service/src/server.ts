@@ -8,6 +8,7 @@ import userRoutes from './routes/userRoutes'; // Import user routes
 import adminUserRoutes from './routes/adminUserRoutes'; // Import admin user routes
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './swaggerConfig';
+import { redisClient } from './config/redis'; // Import Redis client
 
 dotenv.config();
 
@@ -25,26 +26,70 @@ app.use(morgan('dev'));
 const MONGODB_URI = process.env.USER_SERVICE_DB_URI || 'mongodb://localhost:27017/user-service';
 
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Successfully connected to MongoDB for User Service'))
+  .then(() => console.log('✅ Successfully connected to MongoDB for User Service'))
   .catch(err => {
-    console.error('Connection error', err);
+    console.error('❌ MongoDB connection error:', err);
     process.exit(1);
   });
 
+// Redis Connection
+const initializeRedis = async () => {
+  try {
+    await redisClient.connect();
+    console.log('✅ User Service Redis connection established');
+  } catch (error) {
+    console.error('❌ User Service Redis connection failed:', error);
+    // Don't exit process, allow service to run without Redis
+  }
+};
+
+// Initialize Redis connection
+initializeRedis();
+
 // Basic Route
 app.get('/', (req: Request, res: Response) => {
-  res.send('User Service is running!');
+  res.json({
+    service: 'User Service',
+    status: 'running',
+    version: '1.0.0',
+    features: [
+      'User Profile Management',
+      'Preferences & Settings',
+      'Favorites Management',
+      'Meal Planning',
+      'Activity Tracking',
+      'Social Features',
+      'Redis Caching'
+    ]
+  });
 });
 
 // Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
-  res.json({
+app.get('/health', async (req: Request, res: Response) => {
+  const health = {
     status: 'OK',
     timestamp: new Date().toISOString(),
     service: 'User Service',
     version: '1.0.0',
-    uptime: process.uptime()
-  });
+    uptime: process.uptime(),
+    database: {
+      mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    },
+    cache: {
+      redis: 'unknown'
+    }
+  };
+
+  // Check Redis connection
+  try {
+    await redisClient.ping();
+    health.cache.redis = 'connected';
+  } catch (error) {
+    health.cache.redis = 'disconnected';
+  }
+
+  const statusCode = health.database.mongodb === 'connected' ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
 // Mount Routes
@@ -62,7 +107,7 @@ interface HttpError extends Error {
 }
 
 app.use((err: HttpError, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
+  console.error('❌ Error:', err.stack);
   let status = err.status || 500;
   let message = err.message || 'Something went wrong!';
 
@@ -95,11 +140,65 @@ app.use((err: HttpError, req: Request, res: Response, next: NextFunction) => {
     message = err.message;
   }
 
-  res.status(status).json({ error: message });
+  // Redis connection errors
+  if (err.message && err.message.includes('Redis')) {
+    console.warn('⚠️ Redis error (service will continue without caching):', err.message);
+    // Don't return error to client for Redis issues, just log them
+    return next();
+  }
+
+  res.status(status).json({ 
+    success: false,
+    error: message,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('🔄 SIGTERM received, shutting down gracefully...');
+  
+  try {
+    await mongoose.connection.close();
+    console.log('✅ MongoDB connection closed');
+  } catch (error) {
+    console.error('❌ Error closing MongoDB connection:', error);
+  }
+
+  try {
+    await redisClient.quit();
+    console.log('✅ Redis connection closed');
+  } catch (error) {
+    console.error('❌ Error closing Redis connection:', error);
+  }
+
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('🔄 SIGINT received, shutting down gracefully...');
+  
+  try {
+    await mongoose.connection.close();
+    console.log('✅ MongoDB connection closed');
+  } catch (error) {
+    console.error('❌ Error closing MongoDB connection:', error);
+  }
+
+  try {
+    await redisClient.quit();
+    console.log('✅ Redis connection closed');
+  } catch (error) {
+    console.error('❌ Error closing Redis connection:', error);
+  }
+
+  process.exit(0);
 });
 
 app.listen(port, () => {
-  console.log(`User Service listening on port ${port}`);
+  console.log(`🚀 User Service listening on port ${port}`);
+  console.log(`📚 API Documentation available at http://localhost:${port}/api-docs`);
+  console.log(`🏥 Health check available at http://localhost:${port}/health`);
 });
 
 export default app; 
