@@ -1,0 +1,20 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+*.md
+
+# Local environment variables
+.env
+
+# TypeScript source files (if only dist is needed in final image)
+# Depending on your build process, you might want to keep src if build happens in Docker
+# src/
+
+# Test files
+__tests__/
+*.test.ts
+*.spec.ts
+jest.config.js 
