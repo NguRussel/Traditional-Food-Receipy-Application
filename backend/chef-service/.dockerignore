@@ -1,0 +1,19 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+*.md
+# We don't want to ignore dist in the builder stage, it's created there.
+# coverage is a test artifact, not needed in image.
+coverage
+# .env files should typically not be copied into images for security.
+# Environment variables should be injected at runtime.
+.env
+# Exclude TypeScript source files from the final production image if only JS is run
+# However, the current Dockerfile copies all source with COPY . . in the builder stage
+# and then only copies the dist folder to the production stage.
+# So, explicitly ignoring src here is not strictly necessary for the final image size
+# but can speed up the initial COPY . . if src is large.
+# src # Optional: uncomment if you want to ensure src is not copied in initial COPY . . 
