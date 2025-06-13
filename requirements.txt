@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AFRI-Plates: Cameroonian Food Recipe App
 ## Complete Requirements & Architecture Specification
 
@@ -34,6 +35,26 @@
 
 **Endpoints**:
 ```typescript
+=======
+🎯 CORE MICROSERVICES ARCHITECTURE
+1. API-GATEWAY SERVICE (Port: 8000)
+Purpose: Central entry point, routing, authentication middleware, rate limiting
+Technologies:
+•	Express.js + TypeScript
+•	Helmet, CORS, Rate limiting
+•	Clerk JWT validation middleware
+•	Request logging & monitoring
+Responsibilities:
+•	Route requests to appropriate microservices
+•	Authenticate all requests using Clerk JWT
+•	Implement RBAC (Role-Based Access Control)
+•	Load balancing between service instances
+•	API versioning (/api/v1/)
+•	Request/Response transformation
+•	Centralized error handling
+Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Route prefixes
 /api/v1/recipes/* -> RECIPE-SERVICE
 /api/v1/users/* -> USER-SERVICE  
@@ -47,6 +68,7 @@
 /api/v1/ai-assistant/* -> AI-ASSISTANT-SERVICE
 /api/v1/analytics/* -> ANALYTICS-SERVICE
 /api/v1/admin/* -> ADMIN-SERVICE
+<<<<<<< HEAD
 ```
 
 ---
@@ -56,6 +78,13 @@
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+2. RECIPE-SERVICE (Port: 8001)
+Purpose: Core recipe management, CRUD operations, search functionality
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // recipes collection
 interface Recipe {
   _id: ObjectId;
@@ -98,10 +127,15 @@ interface Ingredient {
   unit: string;
   isOptional: boolean;
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Recipe CRUD
 GET /recipes - Get all recipes (with filters)
 GET /recipes/:id - Get recipe by ID
@@ -126,6 +160,7 @@ GET /recipes/:id/related - Get related recipes
 GET /recipes/pending - Get pending recipes for approval (Admin only)
 PUT /recipes/:id/approve - Approve recipe (Admin only)
 PUT /recipes/:id/reject - Reject recipe (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -135,6 +170,13 @@ PUT /recipes/:id/reject - Reject recipe (Admin only)
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+3. USER-SERVICE (Port: 8002)
+Purpose: User profile management, preferences, meal planning, favorites
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // users collection
 interface User {
   _id: ObjectId;
@@ -177,10 +219,15 @@ interface MealPlan {
     snacks?: ObjectId[];
   }[];
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // User Profile
 GET /users/profile - Get user profile
 PUT /users/profile - Update user profile
@@ -206,6 +253,7 @@ POST /users/view-history/:recipeId - Add to view history
 GET /users/all - Get all users (Admin only)
 PUT /users/:id/status - Update user status (Admin only)
 GET /users/statistics - Get user statistics (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -215,6 +263,13 @@ GET /users/statistics - Get user statistics (Admin only)
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+4. CHEF-SERVICE (Port: 8003)
+Purpose: Chef profile management, chef statistics, chef verification
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // chefs collection
 interface Chef {
   _id: ObjectId;
@@ -251,10 +306,15 @@ interface Chef {
   verifiedAt?: Date;
   verifiedBy?: ObjectId; // Admin ID
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Chef Profile
 GET /chefs/:id - Get chef profile
 PUT /chefs/profile - Update chef profile (Chef only)
@@ -280,6 +340,7 @@ GET /chefs/pending-verification - Get pending verifications (Admin only)
 PUT /chefs/:id/verify - Verify chef (Admin only)
 PUT /chefs/:id/reject-verification - Reject verification (Admin only)
 GET /chefs/all - Get all chefs (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -289,6 +350,13 @@ GET /chefs/all - Get all chefs (Admin only)
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+5. REVIEW-SERVICE (Port: 8004)
+Purpose: Recipe reviews, ratings, chef interactions
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // reviews collection
 interface Review {
   _id: ObjectId;
@@ -325,10 +393,15 @@ interface ReviewFlag {
   createdAt: Date;
   resolvedAt?: Date;
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Review Management
 GET /reviews/recipe/:recipeId - Get reviews for recipe
 POST /reviews - Create new review (User only)
@@ -348,6 +421,7 @@ POST /reviews/:id/flag - Flag review as inappropriate
 GET /reviews/flagged - Get flagged reviews (Admin only)
 PUT /reviews/:id/moderate - Moderate review (Admin only)
 GET /reviews/statistics - Get review statistics (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -363,6 +437,18 @@ GET /reviews/statistics - Get review statistics (Admin only)
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+6. MEDIA-SERVICE (Port: 8005)
+Purpose: Handle image uploads, video management, Firebase Storage integration
+Technologies:
+•	Firebase Admin SDK
+•	Multer for file uploads
+•	Sharp for image processing
+•	FFmpeg for video processing
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // media collection
 interface Media {
   _id: ObjectId;
@@ -378,10 +464,15 @@ interface Media {
   flaggedReason?: string;
   createdAt: Date;
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Image Management
 POST /media/images/upload - Upload recipe images
 POST /media/images/avatar - Upload profile pictures
@@ -401,6 +492,7 @@ POST /media/documents/upload - Upload verification documents (Chef only)
 GET /media/flagged - Get flagged media (Admin only)
 PUT /media/:id/moderate - Moderate media content (Admin only)
 GET /media/statistics - Get media usage statistics (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -410,6 +502,13 @@ GET /media/statistics - Get media usage statistics (Admin only)
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+7. RECOMMENDATION-SERVICE (Port: 8006)
+Purpose: AI-powered recipe recommendations, personalized suggestions
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // user_interactions collection
 interface UserInteraction {
   _id: ObjectId;
@@ -420,10 +519,15 @@ interface UserInteraction {
   rating?: number;
   timestamp: Date;
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Recommendations
 GET /recommendations/for-you - Personalized recommendations
 GET /recommendations/similar/:recipeId - Similar recipes
@@ -437,6 +541,7 @@ GET /recommendations/user-taste-profile - Get user taste profile
 // Admin-specific endpoints
 GET /recommendations/analytics - Get recommendation analytics (Admin only)
 POST /recommendations/retrain-model - Trigger model retraining (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -446,6 +551,13 @@ POST /recommendations/retrain-model - Trigger model retraining (Admin only)
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+8. REGIONAL-SERVICE (Port: 8007)
+Purpose: Regional and tribal recipe categorization, cultural information
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // regions collection
 interface Region {
   _id: ObjectId;
@@ -467,10 +579,15 @@ interface Tribe {
   cookingMethods: string[];
   isActive: boolean;
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Regional Data
 GET /regional/regions - Get all regions
 GET /regional/regions/:id - Get region details
@@ -484,6 +601,7 @@ PUT /regional/regions/:id - Update region (Admin only)
 DELETE /regional/regions/:id - Delete region (Admin only)
 POST /regional/tribes - Create new tribe (Admin only)
 PUT /regional/tribes/:id - Update tribe (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -493,6 +611,13 @@ PUT /regional/tribes/:id - Update tribe (Admin only)
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+9. NOTIFICATION-SERVICE (Port: 8008)
+Purpose: Push notifications, email notifications, in-app alerts
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // notifications collection
 interface Notification {
   _id: ObjectId;
@@ -519,10 +644,15 @@ interface SystemNotification {
   createdBy: ObjectId; // Admin ID
   createdAt: Date;
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Notifications
 GET /notifications - Get user notifications
 POST /notifications/mark-read/:id - Mark notification as read
@@ -539,6 +669,7 @@ GET /notifications/system/all - Get all system notifications (Admin only)
 PUT /notifications/system/:id - Update system notification (Admin only)
 DELETE /notifications/system/:id - Delete system notification (Admin only)
 GET /notifications/analytics - Get notification analytics (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -552,6 +683,16 @@ GET /notifications/analytics - Get notification analytics (Admin only)
 
 **API Endpoints**:
 ```typescript
+=======
+________________________________________
+10. SCANNER-SERVICE (Port: 8009)
+Purpose: Ingredient recognition, recipe suggestions from scanned ingredients
+Technologies:
+•	Google Vision API / AWS Rekognition
+•	Machine Learning models for ingredient recognition
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Ingredient Scanning
 POST /scanner/scan-ingredients - Scan image for ingredients
 POST /scanner/suggest-recipes - Get recipes from scanned ingredients
@@ -562,6 +703,7 @@ POST /scanner/identify-dish - Identify dish from image
 GET /scanner/accuracy-metrics - Get scanning accuracy metrics (Admin only)
 POST /scanner/train-model - Trigger model training (Admin only)
 PUT /scanner/ingredient-database - Update ingredient database (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -576,6 +718,17 @@ PUT /scanner/ingredient-database - Update ingredient database (Admin only)
 
 **API Endpoints**:
 ```typescript
+=======
+________________________________________
+11. AI-ASSISTANT-SERVICE (Port: 8010)
+Purpose: VAPI AI integration, voice interactions, cooking assistance
+Technologies:
+•	VAPI AI SDK
+•	OpenAI API integration
+•	Speech-to-text processing
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // AI Assistant  
 POST /ai-assistant/voice-query - Process voice query
 POST /ai-assistant/text-query - Process text query
@@ -587,6 +740,7 @@ POST /ai-assistant/ingredient-substitute - Get ingredient substitutes
 GET /ai-assistant/usage-analytics - Get AI usage analytics (Admin only)
 PUT /ai-assistant/configuration - Update AI configuration (Admin only)
 GET /ai-assistant/conversation-logs - Get conversation logs (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -596,6 +750,13 @@ GET /ai-assistant/conversation-logs - Get conversation logs (Admin only)
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+12. ANALYTICS-SERVICE (Port: 8011)
+Purpose: App analytics, user behavior tracking, business intelligence
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // analytics collection
 interface Analytics {
   _id: ObjectId;
@@ -605,10 +766,15 @@ interface Analytics {
   timestamp: Date;
   sessionId: string;
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Analytics Tracking
 POST /analytics/track - Track user event
 GET /analytics/dashboard - Get analytics dashboard (Admin only)
@@ -620,6 +786,7 @@ GET /analytics/revenue - Get revenue analytics (Admin only)
 GET /analytics/engagement - Get user engagement metrics (Admin only)
 GET /analytics/content-performance - Get content performance (Admin only)
 POST /analytics/generate-report - Generate custom report (Admin only)
+<<<<<<< HEAD
 ```
 
 ---
@@ -629,6 +796,13 @@ POST /analytics/generate-report - Generate custom report (Admin only)
 
 **Database Collections**:
 ```typescript
+=======
+________________________________________
+13. ADMIN-SERVICE (Port: 8012) - NEW
+Purpose: Centralized administration, system management, content moderation
+Database Collections:
+typescript
+>>>>>>> admin-service-dev
 // admins collection
 interface Admin {
   _id: ObjectId;
@@ -683,10 +857,15 @@ interface ContentReport {
   createdAt: Date;
   resolvedAt?: Date;
 }
+<<<<<<< HEAD
 ```
 
 **API Endpoints**:
 ```typescript
+=======
+API Endpoints:
+typescript
+>>>>>>> admin-service-dev
 // Admin Authentication & Profile
 GET /admin/profile - Get admin profile
 PUT /admin/profile - Update admin profile
@@ -755,6 +934,7 @@ POST /admin/regional/ingredients - Add new ingredient to database
 PUT /admin/regional/ingredients/:id - Update ingredient information
 POST /admin/regional/cultural-content - Add cultural content
 PUT /admin/regional/cultural-content/:id - Update cultural content
+<<<<<<< HEAD
 ```
 
 ---
@@ -772,67 +952,113 @@ PUT /admin/regional/cultural-content/:id - Update cultural content
 #### **1. Home & Discovery**
 ```typescript
 // Home Stack
+=======
+
+
+📱 MOBILE APP SCREENS (React Native)
+Authentication Screens (Already Implemented)
+
+Welcome/Onboarding
+Login/Register
+2FA Setup
+Profile Setup
+
+Core User Screens (Priority Order)
+1. Home & Discovery
+typescript// Home Stack
+>>>>>>> admin-service-dev
 - HomeScreen - Featured recipes, trending, recommendations
 - SearchScreen - Recipe search with filters
 - FiltersScreen - Advanced search filters
 - RecipeListScreen - Search results, category listings
+<<<<<<< HEAD
 ```
 
 #### **2. Recipe Experience**
 ```typescript  
 // Recipe Stack
+=======
+2. Recipe Experience
+typescript// Recipe Stack
+>>>>>>> admin-service-dev
 - RecipeDetailScreen - Full recipe view with video
 - VideoPlayerScreen - Full-screen video tutorial
 - IngredientsScreen - Shopping list view
 - CookingModeScreen - Step-by-step cooking guide
 - ReviewsScreen - Recipe reviews and ratings
+<<<<<<< HEAD
 ```
 
 #### **3. User Profile & Preferences**
 ```typescript
 // Profile Stack
+=======
+3. User Profile & Preferences
+typescript// Profile Stack
+>>>>>>> admin-service-dev
 - ProfileScreen - User profile overview
 - EditProfileScreen - Edit user information
 - PreferencesScreen - Dietary preferences, allergies
 - FavoritesScreen - Saved recipes
 - MealPlannerScreen - Weekly meal planning
 - MealPlanDetailScreen - Individual meal plan
+<<<<<<< HEAD
 ```
 
 #### **4. Social Features**
 ```typescript
 // Social Stack  
+=======
+4. Social Features
+typescript// Social Stack  
+>>>>>>> admin-service-dev
 - ChefsScreen - Discover chefs
 - ChefDetailScreen - Chef profile and recipes
 - FollowingScreen - Followed chefs
 - ReviewsManagementScreen - User's reviews
+<<<<<<< HEAD
 ```
 
 #### **5. AI Assistant**
 ```typescript
 // AI Stack
+=======
+5. AI Assistant
+typescript// AI Stack
+>>>>>>> admin-service-dev
 - VoiceAssistantScreen - VAPI AI interface
 - ScannerScreen - Ingredient scanner
 - ScanResultsScreen - Scanned ingredients results
 - RecipeSuggestionsScreen - AI-suggested recipes
+<<<<<<< HEAD
 ```
 
 #### **6. Regional Discovery**
 ```typescript
 // Regional Stack
+=======
+6. Regional Discovery
+typescript// Regional Stack
+>>>>>>> admin-service-dev
 - RegionsScreen - Cameroon regions map
 - RegionDetailScreen - Regional recipes
 - TribalCuisineScreen - Tribal recipes
 - CulturalInfoScreen - Cultural cooking info
+<<<<<<< HEAD
 ```
 
 #### **7. Notifications & Settings**
 ```typescript
 // Settings Stack
+=======
+7. Notifications & Settings
+typescript// Settings Stack
+>>>>>>> admin-service-dev
 - NotificationsScreen - In-app notifications  
 - SettingsScreen - App settings
 - HelpScreen - Help and support
 - AboutScreen - App information
+<<<<<<< HEAD
 ```
 
 ---
@@ -995,6 +1221,177 @@ PUT /admin/regional/cultural-content/:id - Update cultural content
 ### **Docker Setup for Each Service**
 ```dockerfile
 # Example Dockerfile template for each service
+=======
+
+👨‍🍳 CHEF WEB DASHBOARD FUNCTIONALITIES
+Recipe Management
+
+Create, edit, delete recipes
+Upload recipe images and videos
+Add ingredient tags and categorization
+Set cooking difficulty and time
+Manage recipe visibility (public/private)
+Bulk recipe operations
+Track recipe approval status
+View recipe performance analytics
+
+Content Creation Tools
+
+Rich text editor for instructions
+Video upload with thumbnail generation
+Image gallery management
+Recipe template system
+Duplicate recipe functionality
+Import recipes from external sources
+Recipe scheduling for future publication
+
+Analytics & Performance
+
+Recipe view statistics
+Rating and review analytics
+User engagement metrics
+Most popular recipes
+Revenue tracking (if premium features)
+Seasonal trending analysis
+Follower growth metrics
+
+Community Interaction
+
+Respond to user reviews
+Manage follower interactions
+Create cooking tips and articles
+Host live cooking sessions
+Send notifications to followers
+Moderate comments and feedback
+View and respond to recipe reports
+
+Profile Management
+
+Chef profile customization
+Verify chef credentials
+Social media integration
+Portfolio showcase
+Experience and specialization tags
+Regional and tribal cuisine tags
+Verification document upload
+
+Verification Process
+
+Submit verification application
+Upload credentials and certificates
+Track verification status
+Receive verification feedback
+Appeal verification decisions
+
+
+👑 ADMIN WEB PANEL FUNCTIONALITIES
+Dashboard Overview
+
+Real-time system metrics
+User activity summary
+Content moderation queue
+Revenue and growth analytics
+System health indicators
+Recent admin actions log
+
+User Management
+
+View all users, chefs, admins
+User account activation/deactivation
+Role management (RBAC)
+User behavior analysis
+Ban/suspend problematic users
+Bulk user operations
+User communication history
+Account verification management
+
+Content Moderation
+
+Recipe approval workflow
+Review and comment moderation
+Inappropriate content flagging
+Chef verification process
+Media content approval
+Spam detection and removal
+Content report management
+Cultural authenticity verification
+
+Chef Management
+
+Chef verification requests
+Chef profile review
+Verification document validation
+Chef performance analytics
+Featured chef management
+Chef suspension/ban management
+Bulk chef operations
+
+System Analytics
+
+App usage statistics
+Revenue and business metrics
+Performance monitoring
+User growth analytics
+Recipe popularity trends
+Regional usage patterns
+Content engagement metrics
+Conversion funnel analysis
+
+Platform Management
+
+Feature flag management
+System notifications
+Maintenance mode control
+Database backup management
+Server monitoring
+Security audit logs
+API rate limit configuration
+Cache management
+
+Regional & Cultural Management
+
+Manage regions and tribes data
+Curate cultural content
+Verify traditional recipes
+Manage ingredient database
+Cultural authenticity verification
+Educational content creation
+Regional promotion campaigns
+
+Communication Management
+
+Broadcast notifications
+Email campaign management
+System announcements
+User communication templates
+Notification analytics
+Support ticket management
+
+Security & Compliance
+
+Security incident management
+User data protection
+Compliance monitoring
+Audit trail management
+Privacy settings management
+Terms of service updates
+GDPR compliance tools
+
+Reporting & Analytics
+
+Custom report generation
+Data export functionality
+Business intelligence dashboards
+Performance trend analysis
+User behavior insights
+Content performance reports
+Financial reporting
+
+
+🐳 CONTAINERIZATION REQUIREMENTS
+Docker Setup for Each Service
+dockerfile# Example Dockerfile template for each service
+>>>>>>> admin-service-dev
 FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
@@ -1002,11 +1399,16 @@ RUN npm ci --only=production
 COPY . .
 EXPOSE 8000
 CMD ["npm", "start"]
+<<<<<<< HEAD
 ```
 
 ### **Docker Compose Development**
 ```yaml
 # docker-compose.dev.yml
+=======
+Docker Compose Development
+yaml# docker-compose.dev.yml
+>>>>>>> admin-service-dev
 version: '3.8'
 services:
   mongodb:
@@ -1126,6 +1528,7 @@ volumes:
 
 networks:
   afri-plates-network:
+<<<<<<< HEAD
     driver: bridge
 
 
@@ -1195,3 +1598,6 @@ Deliverables:
  Link to hosted Swagger or Postman collection (if API-based) 
 NB: Project Reports should follow the template below deliverables such as images 
 and descriptions should be included in the report. 
+=======
+    driver: bridge
+>>>>>>> admin-service-dev
