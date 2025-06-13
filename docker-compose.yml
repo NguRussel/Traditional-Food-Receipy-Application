@@ -1,0 +1,572 @@
+version: '3.8'
+
+services:
+  # Database Services
+  mongodb:
+    image: mongo:7.0
+    container_name: afri-plates-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: afri_plates
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - afri-plates-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: afri-plates-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - afri-plates-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Core Services
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: afri-plates-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000,http://localhost:19006
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/api-gateway:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-user-service
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - NODE_ENV=development
+      - PORT=8002
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/user-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  recipe-service:
+    build:
+      context: ./backend/recipe-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-recipe-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - NODE_ENV=development
+      - PORT=8001
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - FIREBASE_PROJECT_ID=afri-plates-dev
+      - FIREBASE_STORAGE_BUCKET=afri-plates-dev.appspot.com
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/recipe-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  chef-service:
+    build:
+      context: ./backend/chef-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-chef-service
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - NODE_ENV=development
+      - PORT=8003
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/chef-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  review-service:
+    build:
+      context: ./backend/review-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-review-service
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      - NODE_ENV=development
+      - PORT=8004
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/review-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  media-service:
+    build:
+      context: ./backend/media-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-media-service
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      - NODE_ENV=development
+      - PORT=8005
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - FIREBASE_PROJECT_ID=afri-plates-dev
+      - FIREBASE_STORAGE_BUCKET=afri-plates-dev.appspot.com
+      - MAX_FILE_SIZE=50MB
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/media-service:/app
+      - /app/node_modules
+      - media_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  recommendation-service:
+    build:
+      context: ./backend/recommendation-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-recommendation-service
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      - NODE_ENV=development
+      - PORT=8006
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - ML_MODEL_PATH=/app/models
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/recommendation-service:/app
+      - /app/node_modules
+      - ml_models:/app/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  regional-service:
+    build:
+      context: ./backend/regional-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-regional-service
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      - NODE_ENV=development
+      - PORT=8007
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/regional-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-notification-service
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      - NODE_ENV=development
+      - PORT=8008
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=your-email@gmail.com
+      - SMTP_PASS=your-app-password
+      - PUSH_NOTIFICATION_KEY=your-firebase-server-key
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/notification-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  scanner-service:
+    build:
+      context: ./backend/scanner-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-scanner-service
+    restart: unless-stopped
+    ports:
+      - "8009:8009"
+    environment:
+      - NODE_ENV=development
+      - PORT=8009
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - GOOGLE_VISION_API_KEY=your-google-vision-api-key
+      - AWS_ACCESS_KEY_ID=your-aws-access-key
+      - AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+      - AWS_REGION=us-east-1
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/scanner-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ai-assistant-service:
+    build:
+      context: ./backend/ai-assistant-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-ai-assistant-service
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    environment:
+      - NODE_ENV=development
+      - PORT=8010
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - OPENAI_API_KEY=your-openai-api-key
+      - VAPI_API_KEY=your-vapi-api-key
+      - VAPI_PHONE_NUMBER=your-vapi-phone-number
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/ai-assistant-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  analytics-service:
+    build:
+      context: ./backend/analytics-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-analytics-service
+    restart: unless-stopped
+    ports:
+      - "8011:8011"
+    environment:
+      - NODE_ENV=development
+      - PORT=8011
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - ANALYTICS_DB_URI=mongodb://admin:password123@mongodb:27017/afri_plates_analytics?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/analytics-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  admin-service:
+    build:
+      context: ./backend/admin-service
+      dockerfile: Dockerfile
+    container_name: afri-plates-admin-service
+    restart: unless-stopped
+    ports:
+      - "8012:8012"
+    environment:
+      - NODE_ENV=development
+      - PORT=8012
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/afri_plates?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - ADMIN_SECRET_KEY=your-super-secret-admin-key
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - afri-plates-network
+    volumes:
+      - ./backend/admin-service:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8012/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Monitoring Services
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: afri-plates-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - afri-plates-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: afri-plates-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - afri-plates-network
+    depends_on:
+      - prometheus
+
+  # Message Queue (Optional for advanced features)
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: afri-plates-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - afri-plates-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Elasticsearch for logging (Optional)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    container_name: afri-plates-elasticsearch
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - afri-plates-network
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: afri-plates-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - api-gateway
+    networks:
+      - afri-plates-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  media_uploads:
+    driver: local
+  ml_models:
+    driver: local
+
+networks:
+  afri-plates-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

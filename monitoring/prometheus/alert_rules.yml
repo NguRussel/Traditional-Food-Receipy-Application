@@ -1,0 +1,341 @@
+groups:
+  - name: afri-plates-application-alerts
+    rules:
+      # High Error Rate Alert
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (service, namespace)
+            /
+            sum(rate(http_requests_total[5m])) by (service, namespace)
+          ) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High error rate detected for {{ $labels.service }}"
+          description: "Error rate is {{ $value }}% for service {{ $labels.service }} in namespace {{ $labels.namespace }}"
+          runbook_url: "https://docs.afri-plates.com/runbooks/high-error-rate"
+
+      # High Response Time Alert
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, namespace)
+          ) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+          team: backend
+          service: "{{ $labels.service }}"
+        annotations:
+          summary: "High response time for {{ $labels.service }}"
+          description: "95th percentile response time is {{ $value }}s for service {{ $labels.service }}"
+          runbook_url: "https://docs.afri-plates.com/runbooks/high-response-time"
+
+      # Service Down Alert
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: sre
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "Service {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.afri-plates.com/runbooks/service-down"
+
+      # Database Connection Issues
+      - alert: DatabaseConnectionHigh
+        expr: |
+          (
+            mongodb_connections{type="current"} 
+            / 
+            mongodb_connections{type="available"}
+          ) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "High database connection usage"
+          description: "Database connection usage is {{ $value }}%"
+          runbook_url: "https://docs.afri-plates.com/runbooks/database-connections"
+
+      # Recipe Creation Rate Drop
+      - alert: RecipeCreationRateDrop
+        expr: |
+          (
+            rate(recipes_created_total[1h]) 
+            < 
+            rate(recipes_created_total[1h] offset 24h) * 0.5
+          )
+        for: 30m
+        labels:
+          severity: warning
+          team: product
+        annotations:
+          summary: "Recipe creation rate has dropped significantly"
+          description: "Recipe creation rate is 50% lower than yesterday"
+          runbook_url: "https://docs.afri-plates.com/runbooks/recipe-creation-drop"
+
+      # User Registration Rate Drop
+      - alert: UserRegistrationDrop
+        expr: |
+          (
+            rate(users_registered_total[1h]) 
+            < 
+            rate(users_registered_total[1h] offset 24h) * 0.3
+          )
+        for: 30m
+        labels:
+          severity: warning
+          team: growth
+        annotations:
+          summary: "User registration rate has dropped significantly"
+          description: "User registration rate is 70% lower than yesterday"
+          runbook_url: "https://docs.afri-plates.com/runbooks/user-registration-drop"
+
+      # API Rate Limit Exceeded
+      - alert: APIRateLimitExceeded
+        expr: |
+          sum(rate(http_requests_total{status="429"}[5m])) by (service) > 10
+        for: 2m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "API rate limit exceeded for {{ $labels.service }}"
+          description: "Rate limit exceeded {{ $value }} times per second"
+          runbook_url: "https://docs.afri-plates.com/runbooks/rate-limit-exceeded"
+
+  - name: afri-plates-infrastructure-alerts
+    rules:
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: |
+          (
+            100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+          ) > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% on instance {{ $labels.instance }}"
+          runbook_url: "https://docs.afri-plates.com/runbooks/high-cpu"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) 
+            / 
+            node_memory_MemTotal_bytes
+          ) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}% on instance {{ $labels.instance }}"
+          runbook_url: "https://docs.afri-plates.com/runbooks/high-memory"
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: |
+          (
+            (node_filesystem_size_bytes - node_filesystem_free_bytes) 
+            / 
+            node_filesystem_size_bytes
+          ) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value }}% on {{ $labels.mountpoint }}"
+          runbook_url: "https://docs.afri-plates.com/runbooks/disk-space-low"
+
+      # Pod Restart Rate High
+      - alert: PodRestartRateHigh
+        expr: |
+          rate(kube_pod_container_status_restarts_total[15m]) * 60 * 15 > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "High pod restart rate for {{ $labels.pod }}"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently"
+          runbook_url: "https://docs.afri-plates.com/runbooks/pod-restarts"
+
+      # Pod CrashLoopBackOff
+      - alert: PodCrashLoopBackOff
+        expr: |
+          kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
+        for: 2m
+        labels:
+          severity: critical
+          team: sre
+        annotations:
+          summary: "Pod {{ $labels.pod }} is in CrashLoopBackOff"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is in CrashLoopBackOff state"
+          runbook_url: "https://docs.afri-plates.com/runbooks/crashloopbackoff"
+
+      # Persistent Volume Usage High
+      - alert: PersistentVolumeUsageHigh
+        expr: |
+          (
+            kubelet_volume_stats_used_bytes 
+            / 
+            kubelet_volume_stats_capacity_bytes
+          ) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "High persistent volume usage"
+          description: "PV {{ $labels.persistentvolumeclaim }} usage is {{ $value }}%"
+          runbook_url: "https://docs.afri-plates.com/runbooks/pv-usage-high"
+
+  - name: afri-plates-database-alerts
+    rules:
+      # MongoDB Replica Set Member Down
+      - alert: MongoDBReplicaSetMemberDown
+        expr: mongodb_replset_member_health == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "MongoDB replica set member is down"
+          description: "MongoDB replica set member {{ $labels.name }} is down"
+          runbook_url: "https://docs.afri-plates.com/runbooks/mongodb-member-down"
+
+      # MongoDB High Connection Usage
+      - alert: MongoDBHighConnectionUsage
+        expr: |
+          (
+            mongodb_connections{type="current"} 
+            / 
+            mongodb_connections{type="available"}
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "MongoDB high connection usage"
+          description: "MongoDB connection usage is {{ $value }}%"
+          runbook_url: "https://docs.afri-plates.com/runbooks/mongodb-connections"
+
+      # MongoDB Slow Queries
+      - alert: MongoDBSlowQueries
+        expr: |
+          rate(mongodb_op_counters_total{type="query"}[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "MongoDB experiencing slow queries"
+          description: "MongoDB query rate is {{ $value }} queries/second"
+          runbook_url: "https://docs.afri-plates.com/runbooks/mongodb-slow-queries"
+
+      # Redis Memory Usage High
+      - alert: RedisMemoryUsageHigh
+        expr: |
+          (
+            redis_memory_used_bytes 
+            / 
+            redis_memory_max_bytes
+          ) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: cache
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is {{ $value }}%"
+          runbook_url: "https://docs.afri-plates.com/runbooks/redis-memory-high"
+
+      # Redis Connection Issues
+      - alert: RedisConnectionIssues
+        expr: redis_connected_clients > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: cache
+        annotations:
+          summary: "High number of Redis connections"
+          description: "Redis has {{ $value }} connected clients"
+          runbook_url: "https://docs.afri-plates.com/runbooks/redis-connections"
+
+  - name: afri-plates-business-alerts
+    rules:
+      # Low Recipe Approval Rate
+      - alert: LowRecipeApprovalRate
+        expr: |
+          (
+            rate(recipes_approved_total[1h]) 
+            / 
+            rate(recipes_submitted_total[1h])
+          ) * 100 < 70
+        for: 30m
+        labels:
+          severity: warning
+          team: content
+        annotations:
+          summary: "Low recipe approval rate"
+          description: "Recipe approval rate is {{ $value }}%"
+          runbook_url: "https://docs.afri-plates.com/runbooks/low-approval-rate"
+
+      # High User Churn Rate
+      - alert: HighUserChurnRate
+        expr: |
+          (
+            rate(users_deleted_total[24h]) 
+            / 
+            rate(users_registered_total[24h])
+          ) * 100 > 10
+        for: 1h
+        labels:
+          severity: warning
+          team: growth
+        annotations:
+          summary: "High user churn rate detected"
+          description: "User churn rate is {{ $value }}%"
+          runbook_url: "https://docs.afri-plates.com/runbooks/high-churn-rate"
+
+      # Payment Processing Issues
+      - alert: PaymentProcessingIssues
+        expr: |
+          rate(payments_failed_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: payments
+        annotations:
+          summary: "Payment processing issues detected"
+          description: "Payment failure rate is {{ $value }} failures/second"
+          runbook_url: "https://docs.afri-plates.com/runbooks/payment-issues"
+
+      # AI Service Accuracy Drop
+      - alert: AIServiceAccuracyDrop
+        expr: |
+          ai_ingredient_recognition_accuracy < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: ai
+        annotations:
+          summary: "AI ingredient recognition accuracy has dropped"
+          description: "AI accuracy is {{ $value }}"
+          runbook_url: "https://docs.afri-plates.com/runbooks/ai-accuracy-drop" 

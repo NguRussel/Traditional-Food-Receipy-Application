@@ -1,0 +1,1197 @@
+# AFRI-Plates: Cameroonian Food Recipe App
+## Complete Requirements & Architecture Specification
+
+### 🏗️ PROJECT OVERVIEW
+- **App Name**: AFRI-Plates
+- **Architecture**: Microservices with API Gateway
+- **Frontend**: React Native (Expo Router + TypeScript) for Users, React Web for Chefs/Admins
+- **Backend**: Node.js + Express + TypeScript + MongoDB
+- **Authentication**: Clerk with RBAC + 2FA
+- **Deployment**: Containerized services on Hostinger VPS
+- **Team**: 4 developers
+
+---
+
+## 🎯 CORE MICROSERVICES ARCHITECTURE
+
+### 1. **API-GATEWAY SERVICE** (Port: 8000)
+**Purpose**: Central entry point, routing, authentication middleware, rate limiting
+
+**Technologies**:
+- Express.js + TypeScript
+- Helmet, CORS, Rate limiting
+- Clerk JWT validation middleware
+- Request logging & monitoring
+
+**Responsibilities**:
+- Route requests to appropriate microservices
+- Authenticate all requests using Clerk JWT
+- Implement RBAC (Role-Based Access Control)
+- Load balancing between service instances
+- API versioning (/api/v1/)
+- Request/Response transformation
+- Centralized error handling
+
+**Endpoints**:
+```typescript
+// Route prefixes
+/api/v1/recipes/* -> RECIPE-SERVICE
+/api/v1/users/* -> USER-SERVICE  
+/api/v1/chefs/* -> CHEF-SERVICE
+/api/v1/reviews/* -> REVIEW-SERVICE
+/api/v1/media/* -> MEDIA-SERVICE
+/api/v1/recommendations/* -> RECOMMENDATION-SERVICE
+/api/v1/regional/* -> REGIONAL-SERVICE
+/api/v1/notifications/* -> NOTIFICATION-SERVICE
+/api/v1/scanner/* -> SCANNER-SERVICE
+/api/v1/ai-assistant/* -> AI-ASSISTANT-SERVICE
+/api/v1/analytics/* -> ANALYTICS-SERVICE
+/api/v1/admin/* -> ADMIN-SERVICE
+```
+
+---
+
+### 2. **RECIPE-SERVICE** (Port: 8001)
+**Purpose**: Core recipe management, CRUD operations, search functionality
+
+**Database Collections**:
+```typescript
+// recipes collection
+interface Recipe {
+  _id: ObjectId;
+  name: string;
+  description: string;
+  chefId: ObjectId;
+  chefName: string;
+  cookingTime: number; // minutes
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  servings: number;
+  ingredients: Ingredient[];
+  instructions: string[];
+  tags: {
+    ingredients: string[]; // ['palm-oil', 'fish', 'spinach']
+    categories: string[]; // ['meat', 'chicken', 'seafood']
+    timeOfDay: string[]; // ['breakfast', 'lunch', 'dinner']
+    region: string; // 'Centre', 'Littoral', 'West'
+    tribe: string; // 'Bamileke', 'Bassa', 'Douala'
+    holidays: string[]; // ['Christmas', 'New-Year']
+  };
+  images: string[]; // Firebase Storage URLs
+  videoUrl: string; // Firebase Storage URL
+  ratings: {
+    average: number;
+    count: number;
+  };
+  nutritionInfo?: NutritionInfo;
+  status: 'draft' | 'pending' | 'approved' | 'rejected'; // Admin approval workflow
+  moderationNotes?: string; // Admin moderation comments
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  approvedAt?: Date;
+  approvedBy?: ObjectId; // Admin ID
+}
+
+interface Ingredient {
+  name: string;
+  quantity: string;
+  unit: string;
+  isOptional: boolean;
+}
+```
+
+**API Endpoints**:
+```typescript
+// Recipe CRUD
+GET /recipes - Get all recipes (with filters)
+GET /recipes/:id - Get recipe by ID
+POST /recipes - Create new recipe (Chef only)
+PUT /recipes/:id - Update recipe (Chef/Admin only)
+DELETE /recipes/:id - Delete recipe (Chef/Admin only)
+
+// Search & Filtering  
+GET /recipes/search?q=ndole&region=centre&category=dinner
+GET /recipes/chef/:chefId - Get recipes by chef
+GET /recipes/popular - Get popular recipes
+GET /recipes/recent - Get recent recipes
+GET /recipes/category/:category - Get recipes by category
+GET /recipes/region/:region - Get recipes by region
+GET /recipes/tribe/:tribe - Get tribal recipes
+
+// Recipe Interactions
+POST /recipes/:id/view - Track recipe view
+GET /recipes/:id/related - Get related recipes
+
+// Admin-specific endpoints
+GET /recipes/pending - Get pending recipes for approval (Admin only)
+PUT /recipes/:id/approve - Approve recipe (Admin only)
+PUT /recipes/:id/reject - Reject recipe (Admin only)
+```
+
+---
+
+### 3. **USER-SERVICE** (Port: 8002)
+**Purpose**: User profile management, preferences, meal planning, favorites
+
+**Database Collections**:
+```typescript
+// users collection
+interface User {
+  _id: ObjectId;
+  clerkId: string; // Clerk user ID
+  email: string;
+  username: string;
+  fullName: string;
+  avatar?: string;
+  preferences: {
+    dietaryRestrictions: string[]; // ['vegetarian', 'gluten-free']
+    allergies: string[];
+    favoriteRegions: string[];
+    favoriteTribes: string[];
+    spiceLevel: 'Mild' | 'Medium' | 'Hot';
+    cookingExperience: 'Beginner' | 'Intermediate' | 'Advanced';
+  };
+  favorites: ObjectId[]; // Recipe IDs
+  mealPlans: MealPlan[];
+  searchHistory: string[];
+  viewHistory: ObjectId[]; // Recipe IDs
+  accountStatus: 'active' | 'suspended' | 'banned' | 'pending_verification';
+  suspensionReason?: string;
+  suspensionExpiry?: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLoginAt?: Date;
+}
+
+interface MealPlan {
+  _id: ObjectId;
+  name: string;
+  startDate: Date;
+  endDate: Date;
+  meals: {
+    date: Date;
+    breakfast?: ObjectId; // Recipe ID
+    lunch?: ObjectId;
+    dinner?: ObjectId;
+    snacks?: ObjectId[];
+  }[];
+}
+```
+
+**API Endpoints**:
+```typescript
+// User Profile
+GET /users/profile - Get user profile
+PUT /users/profile - Update user profile
+PUT /users/preferences - Update user preferences
+
+// Favorites
+GET /users/favorites - Get user's favorite recipes
+POST /users/favorites/:recipeId - Add recipe to favorites
+DELETE /users/favorites/:recipeId - Remove from favorites
+
+// Meal Planning
+GET /users/meal-plans - Get user's meal plans
+POST /users/meal-plans - Create new meal plan
+PUT /users/meal-plans/:id - Update meal plan
+DELETE /users/meal-plans/:id - Delete meal plan
+
+// User Activity
+POST /users/search-history - Add to search history
+GET /users/view-history - Get view history
+POST /users/view-history/:recipeId - Add to view history
+
+// Admin-specific endpoints
+GET /users/all - Get all users (Admin only)
+PUT /users/:id/status - Update user status (Admin only)
+GET /users/statistics - Get user statistics (Admin only)
+```
+
+---
+
+### 4. **CHEF-SERVICE** (Port: 8003)
+**Purpose**: Chef profile management, chef statistics, chef verification
+
+**Database Collections**:
+```typescript
+// chefs collection
+interface Chef {
+  _id: ObjectId;
+  clerkId: string;
+  email: string;
+  name: string;
+  bio: string;
+  avatar?: string;
+  specialization: string[]; // ['Traditional Cuisine', 'Modern Fusion']
+  experience: number; // years
+  region: string; // 'Centre', 'Littoral'
+  tribe?: string;
+  verificationStatus: 'pending' | 'verified' | 'rejected'; // Admin verification
+  verificationDocuments: string[]; // Document URLs
+  verificationNotes?: string; // Admin notes
+  isVerified: boolean;
+  socialMedia: {
+    instagram?: string;
+    facebook?: string;
+    youtube?: string;
+  };
+  statistics: {
+    totalRecipes: number;
+    totalViews: number;
+    totalFollowers: number;
+    averageRating: number;
+    totalReviews: number;
+  };
+  followers: ObjectId[]; // User IDs
+  accountStatus: 'active' | 'suspended' | 'banned';
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  verifiedAt?: Date;
+  verifiedBy?: ObjectId; // Admin ID
+}
+```
+
+**API Endpoints**:
+```typescript
+// Chef Profile
+GET /chefs/:id - Get chef profile
+PUT /chefs/profile - Update chef profile (Chef only)
+GET /chefs/popular - Get popular chefs
+GET /chefs/search?q=mama&region=centre - Search chefs
+
+// Chef Statistics  
+GET /chefs/statistics - Get chef statistics (Chef only)
+GET /chefs/:id/recipes - Get recipes by chef
+GET /chefs/:id/followers - Get chef followers
+
+// Following System
+POST /chefs/:id/follow - Follow chef (User only)
+DELETE /chefs/:id/unfollow - Unfollow chef (User only)
+GET /chefs/following - Get followed chefs (User only)
+
+// Chef Verification
+POST /chefs/apply-verification - Apply for verification (Chef only)
+PUT /chefs/verification-documents - Upload verification docs (Chef only)
+
+// Admin-specific endpoints
+GET /chefs/pending-verification - Get pending verifications (Admin only)
+PUT /chefs/:id/verify - Verify chef (Admin only)
+PUT /chefs/:id/reject-verification - Reject verification (Admin only)
+GET /chefs/all - Get all chefs (Admin only)
+```
+
+---
+
+### 5. **REVIEW-SERVICE** (Port: 8004)
+**Purpose**: Recipe reviews, ratings, chef interactions
+
+**Database Collections**:
+```typescript
+// reviews collection
+interface Review {
+  _id: ObjectId;
+  recipeId: ObjectId;
+  userId: ObjectId;
+  userName: string;
+  userAvatar?: string;
+  rating: number; // 1-5
+  comment: string;
+  images?: string[]; // User's cooking results
+  helpful: number; // Helpful votes
+  chefReply?: {
+    comment: string;
+    repliedAt: Date;
+  };
+  status: 'active' | 'flagged' | 'hidden' | 'deleted'; // Admin moderation
+  flaggedReasons?: string[]; // Reasons for flagging
+  moderatedBy?: ObjectId; // Admin ID
+  moderatedAt?: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// review_flags collection
+interface ReviewFlag {
+  _id: ObjectId;
+  reviewId: ObjectId;
+  reportedBy: ObjectId;
+  reason: 'spam' | 'inappropriate' | 'offensive' | 'fake' | 'other';
+  description?: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  resolvedBy?: ObjectId; // Admin ID
+  createdAt: Date;
+  resolvedAt?: Date;
+}
+```
+
+**API Endpoints**:
+```typescript
+// Review Management
+GET /reviews/recipe/:recipeId - Get reviews for recipe
+POST /reviews - Create new review (User only)
+PUT /reviews/:id - Update review (User only)
+DELETE /reviews/:id - Delete review (User/Admin only)
+
+// Chef Interactions
+POST /reviews/:id/reply - Chef reply to review (Chef only)
+PUT /reviews/:id/reply - Update chef reply (Chef only)
+
+// Review Interactions
+POST /reviews/:id/helpful - Mark review as helpful
+GET /reviews/user/:userId - Get user's reviews
+POST /reviews/:id/flag - Flag review as inappropriate
+
+// Admin-specific endpoints
+GET /reviews/flagged - Get flagged reviews (Admin only)
+PUT /reviews/:id/moderate - Moderate review (Admin only)
+GET /reviews/statistics - Get review statistics (Admin only)
+```
+
+---
+
+### 6. **MEDIA-SERVICE** (Port: 8005)
+**Purpose**: Handle image uploads, video management, Firebase Storage integration
+
+**Technologies**:
+- Firebase Admin SDK
+- Multer for file uploads
+- Sharp for image processing
+- FFmpeg for video processing
+
+**Database Collections**:
+```typescript
+// media collection
+interface Media {
+  _id: ObjectId;
+  originalName: string;
+  fileName: string;
+  firebaseUrl: string;
+  type: 'image' | 'video' | 'document';
+  category: 'recipe' | 'profile' | 'verification' | 'review';
+  uploadedBy: ObjectId;
+  size: number;
+  mimeType: string;
+  status: 'active' | 'flagged' | 'deleted';
+  flaggedReason?: string;
+  createdAt: Date;
+}
+```
+
+**API Endpoints**:
+```typescript
+// Image Management
+POST /media/images/upload - Upload recipe images
+POST /media/images/avatar - Upload profile pictures
+DELETE /media/images/:id - Delete image
+GET /media/images/:id/optimized - Get optimized image
+
+// Video Management  
+POST /media/videos/upload - Upload recipe videos
+GET /media/videos/:id/stream - Stream video
+DELETE /media/videos/:id - Delete video
+POST /media/videos/:id/thumbnail - Generate video thumbnail
+
+// Document Management (Verification docs)
+POST /media/documents/upload - Upload verification documents (Chef only)
+
+// Admin-specific endpoints
+GET /media/flagged - Get flagged media (Admin only)
+PUT /media/:id/moderate - Moderate media content (Admin only)
+GET /media/statistics - Get media usage statistics (Admin only)
+```
+
+---
+
+### 7. **RECOMMENDATION-SERVICE** (Port: 8006)
+**Purpose**: AI-powered recipe recommendations, personalized suggestions
+
+**Database Collections**:
+```typescript
+// user_interactions collection
+interface UserInteraction {
+  _id: ObjectId;
+  userId: ObjectId;
+  recipeId: ObjectId;
+  interactionType: 'view' | 'like' | 'save' | 'cook' | 'share';
+  duration?: number; // for views
+  rating?: number;
+  timestamp: Date;
+}
+```
+
+**API Endpoints**:
+```typescript
+// Recommendations
+GET /recommendations/for-you - Personalized recommendations
+GET /recommendations/similar/:recipeId - Similar recipes
+GET /recommendations/trending - Trending recipes
+GET /recommendations/based-on-ingredients - Recipe suggestions from ingredients
+
+// Machine Learning Data
+POST /recommendations/interaction - Track user interaction
+GET /recommendations/user-taste-profile - Get user taste profile
+
+// Admin-specific endpoints
+GET /recommendations/analytics - Get recommendation analytics (Admin only)
+POST /recommendations/retrain-model - Trigger model retraining (Admin only)
+```
+
+---
+
+### 8. **REGIONAL-SERVICE** (Port: 8007)
+**Purpose**: Regional and tribal recipe categorization, cultural information
+
+**Database Collections**:
+```typescript
+// regions collection
+interface Region {
+  _id: ObjectId;
+  name: string; // 'Centre', 'Littoral', 'West'
+  description: string;
+  tribes: Tribe[];
+  popularDishes: string[];
+  ingredients: string[];
+  culturalInfo: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Tribe {
+  name: string; // 'Bamileke', 'Bassa'  
+  description: string;
+  traditionalDishes: string[];
+  cookingMethods: string[];
+  isActive: boolean;
+}
+```
+
+**API Endpoints**:
+```typescript
+// Regional Data
+GET /regional/regions - Get all regions
+GET /regional/regions/:id - Get region details
+GET /regional/tribes - Get all tribes
+GET /regional/recipes/:region - Get recipes by region
+GET /regional/recipes/tribe/:tribe - Get tribal recipes
+
+// Admin-specific endpoints
+POST /regional/regions - Create new region (Admin only)
+PUT /regional/regions/:id - Update region (Admin only)
+DELETE /regional/regions/:id - Delete region (Admin only)
+POST /regional/tribes - Create new tribe (Admin only)
+PUT /regional/tribes/:id - Update tribe (Admin only)
+```
+
+---
+
+### 9. **NOTIFICATION-SERVICE** (Port: 8008)
+**Purpose**: Push notifications, email notifications, in-app alerts
+
+**Database Collections**:
+```typescript
+// notifications collection
+interface Notification {
+  _id: ObjectId;
+  userId: ObjectId;
+  type: 'recipe_liked' | 'new_follower' | 'chef_reply' | 'new_recipe' | 'meal_reminder' | 'account_warning' | 'system_announcement';
+  title: string;
+  message: string;
+  data?: any; // Additional notification data
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  isRead: boolean;
+  createdAt: Date;
+}
+
+// system_notifications collection
+interface SystemNotification {
+  _id: ObjectId;
+  title: string;
+  message: string;
+  type: 'maintenance' | 'feature' | 'policy' | 'warning';
+  targetAudience: 'all' | 'users' | 'chefs' | 'admins';
+  isActive: boolean;
+  scheduledAt?: Date;
+  expiresAt?: Date;
+  createdBy: ObjectId; // Admin ID
+  createdAt: Date;
+}
+```
+
+**API Endpoints**:
+```typescript
+// Notifications
+GET /notifications - Get user notifications
+POST /notifications/mark-read/:id - Mark notification as read
+POST /notifications/mark-all-read - Mark all as read
+DELETE /notifications/:id - Delete notification
+
+// Push Notification Management
+POST /notifications/subscribe - Subscribe to push notifications
+POST /notifications/send - Send notification (System only)
+
+// Admin-specific endpoints
+POST /notifications/system - Create system notification (Admin only)
+GET /notifications/system/all - Get all system notifications (Admin only)
+PUT /notifications/system/:id - Update system notification (Admin only)
+DELETE /notifications/system/:id - Delete system notification (Admin only)
+GET /notifications/analytics - Get notification analytics (Admin only)
+```
+
+---
+
+### 10. **SCANNER-SERVICE** (Port: 8009)
+**Purpose**: Ingredient recognition, recipe suggestions from scanned ingredients
+
+**Technologies**:
+- Google Vision API / AWS Rekognition
+- Machine Learning models for ingredient recognition
+
+**API Endpoints**:
+```typescript
+// Ingredient Scanning
+POST /scanner/scan-ingredients - Scan image for ingredients
+POST /scanner/suggest-recipes - Get recipes from scanned ingredients
+GET /scanner/ingredient-database - Get ingredient database
+POST /scanner/identify-dish - Identify dish from image
+
+// Admin-specific endpoints
+GET /scanner/accuracy-metrics - Get scanning accuracy metrics (Admin only)
+POST /scanner/train-model - Trigger model training (Admin only)
+PUT /scanner/ingredient-database - Update ingredient database (Admin only)
+```
+
+---
+
+### 11. **AI-ASSISTANT-SERVICE** (Port: 8010)
+**Purpose**: VAPI AI integration, voice interactions, cooking assistance
+
+**Technologies**:
+- VAPI AI SDK
+- OpenAI API integration
+- Speech-to-text processing
+
+**API Endpoints**:
+```typescript
+// AI Assistant  
+POST /ai-assistant/voice-query - Process voice query
+POST /ai-assistant/text-query - Process text query
+GET /ai-assistant/recipe-suggestions - Get AI recipe suggestions
+POST /ai-assistant/cooking-help - Get cooking assistance
+POST /ai-assistant/ingredient-substitute - Get ingredient substitutes
+
+// Admin-specific endpoints
+GET /ai-assistant/usage-analytics - Get AI usage analytics (Admin only)
+PUT /ai-assistant/configuration - Update AI configuration (Admin only)
+GET /ai-assistant/conversation-logs - Get conversation logs (Admin only)
+```
+
+---
+
+### 12. **ANALYTICS-SERVICE** (Port: 8011)
+**Purpose**: App analytics, user behavior tracking, business intelligence
+
+**Database Collections**:
+```typescript
+// analytics collection
+interface Analytics {
+  _id: ObjectId;
+  eventType: string;
+  userId?: ObjectId;
+  data: any;
+  timestamp: Date;
+  sessionId: string;
+}
+```
+
+**API Endpoints**:
+```typescript
+// Analytics Tracking
+POST /analytics/track - Track user event
+GET /analytics/dashboard - Get analytics dashboard (Admin only)
+GET /analytics/recipes/popular - Get popular recipes analytics
+GET /analytics/users/behavior - Get user behavior analytics
+
+// Admin-specific endpoints
+GET /analytics/revenue - Get revenue analytics (Admin only)
+GET /analytics/engagement - Get user engagement metrics (Admin only)
+GET /analytics/content-performance - Get content performance (Admin only)
+POST /analytics/generate-report - Generate custom report (Admin only)
+```
+
+---
+
+### 13. **ADMIN-SERVICE** (Port: 8012) - NEW
+**Purpose**: Centralized administration, system management, content moderation
+
+**Database Collections**:
+```typescript
+// admins collection
+interface Admin {
+  _id: ObjectId;
+  clerkId: string;
+  email: string;
+  fullName: string;
+  avatar?: string;
+  role: 'super_admin' | 'content_moderator' | 'user_manager' | 'system_admin';
+  permissions: string[]; // ['manage_users', 'moderate_content', 'system_settings']
+  department: string; // 'Content', 'Technical', 'Operations'
+  isActive: boolean;
+  lastLoginAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// admin_actions collection
+interface AdminAction {
+  _id: ObjectId;
+  adminId: ObjectId;
+  adminEmail: string;
+  action: string; // 'user_suspended', 'recipe_approved', 'chef_verified'
+  targetType: 'user' | 'chef' | 'recipe' | 'review' | 'system';
+  targetId?: ObjectId;
+  details: any; // Action-specific data
+  reason?: string;
+  timestamp: Date;
+}
+
+// system_settings collection
+interface SystemSettings {
+  _id: ObjectId;
+  category: string; // 'app', 'security', 'features', 'limits'
+  key: string;
+  value: any;
+  description: string;
+  updatedBy: ObjectId; // Admin ID
+  updatedAt: Date;
+}
+
+// content_reports collection
+interface ContentReport {
+  _id: ObjectId;
+  reportType: 'recipe' | 'review' | 'chef' | 'user';
+  contentId: ObjectId;
+  reportedBy: ObjectId;
+  reason: string;
+  description?: string;
+  status: 'pending' | 'investigating' | 'resolved' | 'dismissed';
+  assignedTo?: ObjectId; // Admin ID
+  resolution?: string;
+  createdAt: Date;
+  resolvedAt?: Date;
+}
+```
+
+**API Endpoints**:
+```typescript
+// Admin Authentication & Profile
+GET /admin/profile - Get admin profile
+PUT /admin/profile - Update admin profile
+GET /admin/permissions - Get admin permissions
+
+// User Management
+GET /admin/users - Get all users with filters and pagination
+GET /admin/users/:id - Get specific user details
+PUT /admin/users/:id/status - Update user account status
+POST /admin/users/:id/suspend - Suspend user account
+POST /admin/users/:id/ban - Ban user account
+DELETE /admin/users/:id - Delete user account
+GET /admin/users/statistics - Get user statistics
+POST /admin/users/bulk-action - Perform bulk user actions
+
+// Chef Management
+GET /admin/chefs - Get all chefs with filters
+GET /admin/chefs/verification-requests - Get pending verification requests
+PUT /admin/chefs/:id/verify - Verify chef account
+PUT /admin/chefs/:id/reject-verification - Reject chef verification
+GET /admin/chefs/statistics - Get chef statistics
+POST /admin/chefs/:id/feature - Feature chef on homepage
+
+// Content Moderation
+GET /admin/content/reports - Get all content reports
+GET /admin/content/pending-approval - Get content pending approval
+PUT /admin/content/recipes/:id/approve - Approve recipe
+PUT /admin/content/recipes/:id/reject - Reject recipe
+GET /admin/content/flagged-reviews - Get flagged reviews
+PUT /admin/content/reviews/:id/moderate - Moderate review
+GET /admin/content/statistics - Get content moderation statistics
+
+// System Management
+GET /admin/system/settings - Get system settings
+PUT /admin/system/settings - Update system settings
+GET /admin/system/health - Get system health status
+GET /admin/system/logs - Get system logs
+POST /admin/system/maintenance - Toggle maintenance mode
+GET /admin/system/analytics - Get system analytics
+
+// Reports & Analytics
+GET /admin/reports/dashboard - Get admin dashboard data
+GET /admin/reports/user-activity - Get user activity reports
+GET /admin/reports/content-performance - Get content performance
+GET /admin/reports/revenue - Get revenue reports
+POST /admin/reports/export - Export reports in various formats
+
+// Notification Management
+POST /admin/notifications/broadcast - Send broadcast notification
+GET /admin/notifications/templates - Get notification templates
+POST /admin/notifications/templates - Create notification template
+PUT /admin/notifications/templates/:id - Update notification template
+
+// Action Logs
+GET /admin/logs/actions - Get admin action logs
+GET /admin/logs/user-activities - Get user activity logs
+GET /admin/logs/system-events - Get system event logs
+
+// Feature Management
+GET /admin/features/flags - Get feature flags
+PUT /admin/features/flags/:key - Update feature flag
+POST /admin/features/toggle - Toggle feature for specific users/groups
+
+// Regional & Cultural Management
+POST /admin/regional/ingredients - Add new ingredient to database
+PUT /admin/regional/ingredients/:id - Update ingredient information
+POST /admin/regional/cultural-content - Add cultural content
+PUT /admin/regional/cultural-content/:id - Update cultural content
+```
+
+---
+
+## 📱 MOBILE APP SCREENS (React Native)
+
+### **Authentication Screens** (Already Implemented)
+- Welcome/Onboarding
+- Login/Register
+- 2FA Setup
+- Profile Setup
+
+### **Core User Screens** (Priority Order)
+
+#### **1. Home & Discovery**
+```typescript
+// Home Stack
+- HomeScreen - Featured recipes, trending, recommendations
+- SearchScreen - Recipe search with filters
+- FiltersScreen - Advanced search filters
+- RecipeListScreen - Search results, category listings
+```
+
+#### **2. Recipe Experience**
+```typescript  
+// Recipe Stack
+- RecipeDetailScreen - Full recipe view with video
+- VideoPlayerScreen - Full-screen video tutorial
+- IngredientsScreen - Shopping list view
+- CookingModeScreen - Step-by-step cooking guide
+- ReviewsScreen - Recipe reviews and ratings
+```
+
+#### **3. User Profile & Preferences**
+```typescript
+// Profile Stack
+- ProfileScreen - User profile overview
+- EditProfileScreen - Edit user information
+- PreferencesScreen - Dietary preferences, allergies
+- FavoritesScreen - Saved recipes
+- MealPlannerScreen - Weekly meal planning
+- MealPlanDetailScreen - Individual meal plan
+```
+
+#### **4. Social Features**
+```typescript
+// Social Stack  
+- ChefsScreen - Discover chefs
+- ChefDetailScreen - Chef profile and recipes
+- FollowingScreen - Followed chefs
+- ReviewsManagementScreen - User's reviews
+```
+
+#### **5. AI Assistant**
+```typescript
+// AI Stack
+- VoiceAssistantScreen - VAPI AI interface
+- ScannerScreen - Ingredient scanner
+- ScanResultsScreen - Scanned ingredients results
+- RecipeSuggestionsScreen - AI-suggested recipes
+```
+
+#### **6. Regional Discovery**
+```typescript
+// Regional Stack
+- RegionsScreen - Cameroon regions map
+- RegionDetailScreen - Regional recipes
+- TribalCuisineScreen - Tribal recipes
+- CulturalInfoScreen - Cultural cooking info
+```
+
+#### **7. Notifications & Settings**
+```typescript
+// Settings Stack
+- NotificationsScreen - In-app notifications  
+- SettingsScreen - App settings
+- HelpScreen - Help and support
+- AboutScreen - App information
+```
+
+---
+
+## 👨‍🍳 CHEF WEB DASHBOARD FUNCTIONALITIES
+
+### **Recipe Management**
+- Create, edit, delete recipes
+- Upload recipe images and videos
+- Add ingredient tags and categorization
+- Set cooking difficulty and time
+- Manage recipe visibility (public/private)
+- Bulk recipe operations
+- Track recipe approval status
+- View recipe performance analytics
+
+### **Content Creation Tools**
+- Rich text editor for instructions
+- Video upload with thumbnail generation
+- Image gallery management
+- Recipe template system
+- Duplicate recipe functionality
+- Import recipes from external sources
+- Recipe scheduling for future publication
+
+### **Analytics & Performance**
+- Recipe view statistics
+- Rating and review analytics
+- User engagement metrics
+- Most popular recipes
+- Revenue tracking (if premium features)
+- Seasonal trending analysis
+- Follower growth metrics
+
+### **Community Interaction**
+- Respond to user reviews
+- Manage follower interactions
+- Create cooking tips and articles
+- Host live cooking sessions
+- Send notifications to followers
+- Moderate comments and feedback
+- View and respond to recipe reports
+
+### **Profile Management**
+- Chef profile customization
+- Verify chef credentials
+- Social media integration
+- Portfolio showcase
+- Experience and specialization tags
+- Regional and tribal cuisine tags
+- Verification document upload
+
+### **Verification Process**
+- Submit verification application
+- Upload credentials and certificates
+- Track verification status
+- Receive verification feedback
+- Appeal verification decisions
+
+---
+
+## 👑 ADMIN WEB PANEL FUNCTIONALITIES
+
+### **Dashboard Overview**
+- Real-time system metrics
+- User activity summary
+- Content moderation queue
+- Revenue and growth analytics
+- System health indicators
+- Recent admin actions log
+
+### **User Management**
+- View all users, chefs, admins
+- User account activation/deactivation
+- Role management (RBAC)
+- User behavior analysis
+- Ban/suspend problematic users
+- Bulk user operations
+- User communication history
+- Account verification management
+
+### **Content Moderation**
+- Recipe approval workflow
+- Review and comment moderation
+- Inappropriate content flagging
+- Chef verification process
+- Media content approval
+- Spam detection and removal
+- Content report management
+- Cultural authenticity verification
+
+### **Chef Management**
+- Chef verification requests
+- Chef profile review
+- Verification document validation
+- Chef performance analytics
+- Featured chef management
+- Chef suspension/ban management
+- Bulk chef operations
+
+### **System Analytics**
+- App usage statistics
+- Revenue and business metrics
+- Performance monitoring
+- User growth analytics
+- Recipe popularity trends
+- Regional usage patterns
+- Content engagement metrics
+- Conversion funnel analysis
+
+### **Platform Management**
+- Feature flag management
+- System notifications
+- Maintenance mode control
+- Database backup management
+- Server monitoring
+- Security audit logs
+- API rate limit configuration
+- Cache management
+
+### **Regional & Cultural Management**
+- Manage regions and tribes data
+- Curate cultural content
+- Verify traditional recipes
+- Manage ingredient database
+- Cultural authenticity verification
+- Educational content creation
+- Regional promotion campaigns
+
+### **Communication Management**
+- Broadcast notifications
+- Email campaign management
+- System announcements
+- User communication templates
+- Notification analytics
+- Support ticket management
+
+### **Security & Compliance**
+- Security incident management
+- User data protection
+- Compliance monitoring
+- Audit trail management
+- Privacy settings management
+- Terms of service updates
+- GDPR compliance tools
+
+### **Reporting & Analytics**
+- Custom report generation
+- Data export functionality
+- Business intelligence dashboards
+- Performance trend analysis
+- User behavior insights
+- Content performance reports
+- Financial reporting
+
+---
+
+## 🐳 CONTAINERIZATION REQUIREMENTS
+
+### **Docker Setup for Each Service**
+```dockerfile
+# Example Dockerfile template for each service
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 8000
+CMD ["npm", "start"]
+```
+
+### **Docker Compose Development**
+```yaml
+# docker-compose.dev.yml
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:7.0
+    ports: ["27017:27017"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+  
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  
+  api-gateway:
+    build: ./services/api-gateway
+    ports: ["8000:8000"]
+    depends_on: [mongodb, redis]
+  
+  recipe-service:
+    build: ./services/recipe-service
+    ports: ["8001:8001"]
+    depends_on: [mongodb, redis]
+  
+  user-service:
+    build: ./services/user-service
+    ports: ["8002:8002"]
+    depends_on: [mongodb, redis]
+  
+  chef-service:
+    build: ./services/chef-service
+    ports: ["8003:8003"]
+    depends_on: [mongodb, redis]
+  
+  review-service:
+    build: ./services/review-service
+    ports: ["8004:8004"]
+    depends_on: [mongodb, redis]
+  
+  media-service:
+    build: ./services/media-service
+    ports: ["8005:8005"]
+    depends_on: [mongodb, redis]
+  
+  recommendation-service:
+    build: ./services/recommendation-service
+    ports: ["8006:8006"]
+    depends_on: [mongodb, redis]
+  
+  regional-service:
+    build: ./services/regional-service
+    ports: ["8007:8007"]
+    depends_on: [mongodb, redis]
+  
+  notification-service:
+    build: ./services/notification-service
+    ports: ["8008:8008"]
+    depends_on: [mongodb, redis]
+  
+  scanner-service:
+    build: ./services/scanner-service
+    ports: ["8009:8009"]
+    depends_on: [mongodb, redis]
+  
+  ai-assistant-service:
+    build: ./services/ai-assistant-service
+    ports: ["8010:8010"]
+    depends_on: [mongodb, redis]
+  
+  analytics-service:
+    build: ./services/analytics-service
+    ports: ["8011:8011"]
+    depends_on: [mongodb, redis]
+  
+  admin-service:
+    build: ./services/admin-service
+    ports: ["8012:8012"]
+    depends_on: [mongodb, redis]
+
+# Production docker-compose.prod.yml
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:7.0
+    restart: always
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    networks:
+      - afri-plates-network
+  
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - afri-plates-network
+  
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - api-gateway
+    networks:
+      - afri-plates-network
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  afri-plates-network:
+    driver: bridge
+
+
+3. CI/CD Pipeline with Jenkins (10 Marks) 
+Implement a CI/CD pipeline using Jenkins: 
+ Automate build, test, and deployment stages 
+ Integrate your source control (e.g., GitHub/GitLab) 
+Deliverables:
+ Jenkinsfile 
+ Screenshots or demo video of Jenkins pipeline runs 
+ Explanation of the pipeline stages 
+4. Continuous Monitoring with Prometheus and Grafana (2.5 Marks) 
+Set up platform and application monitoring: 
+ Export Metrices from your Platform and your Application 
+ Visualize and alert using Prometheus and Grafana 
+Deliverables:
+ Dashboard screenshots 
+ Explanation of key metrics being monitored 
+5. Infrastructure as Code with Ansible (2.5 Marks) 
+Provision and configure part of your infrastructure using Ansible: 
+ Include at least 2 playbooks (e.g., install packages, start services) 
+Deliverables:
+ Ansible playbooks 
+ Execution logs/screenshots 
+6. Robust Testing of Application (10 Marks) 
+Implement testing at different levels: 
+ Unit tests, Integration tests, and optionally E2E tests 
+ Achieve minimum 80% code coverage 
+Deliverables:
+ Test results and coverage report 
+ Sample test cases and automation scripts 
+7. Containerization and Orchestration with Kubernetes (15 Marks) 
+Deploy your application using Kubernetes: 
+ Containerize with Docker 
+ Deploy with Kubernetes manifests or Helm charts 
+ Implement scaling, rolling updates, and service discovery 
+Deliverables:
+ Dockerfiles 
+ Kubernetes YAMLs or Helm chart 
+ Screenshots or recordings of Kubernetes dashboard or CLI output 
+8. Architecture Structures and Characteristics (20 Marks) 
+Demonstrate architectural thinking: 
+ Identify and justify architecture style (e.g., microservices, layered, eventdriven) 
+ Show key architectural structures (component, deployment, module views) 
+ Discuss trade-offs and quality attributes (e.g., performance, scalability, 
+security). 
+ Pros and Cons of chosen Architecture 
+Deliverables:
+ Architecture document with diagrams (UML encouraged) 
+ A report showing all the steps of the Architectural design process as 
+discussed during the course. 
+9. Project Innovation (10 Marks) 
+Show originality and creativity in your project: 
+ Use of emerging tech (e.g., AI, blockchain, AR) 
+ Unique business logic or compelling user experience 
+Deliverables:
+ Description of innovation aspect 
+ Demo video or screenshots highlighting innovation 
+10. Project Documentation (15 Marks) 
+Provide comprehensive documentation: 
+ README (setup, usage, contribution guidelines) on Github Repo 
+ API documentation (Swagger/Postman preferred) 
+ User manual or onboarding guide 
+ Project Report Template 
+Deliverables:
+ Repository with complete documentation 
+ Link to hosted Swagger or Postman collection (if API-based) 
+NB: Project Reports should follow the template below deliverables such as images 
+and descriptions should be included in the report. 

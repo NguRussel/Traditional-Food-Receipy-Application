@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: afri-plates
+  labels:
+    name: afri-plates
+    environment: production
+    app: afri-plates
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: afri-plates-staging
+  labels:
+    name: afri-plates-staging
+    environment: staging
+    app: afri-plates
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: afri-plates-monitoring
+  labels:
+    name: afri-plates-monitoring
+    environment: monitoring
+    app: afri-plates 

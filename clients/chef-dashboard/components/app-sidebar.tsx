@@ -19,6 +19,7 @@ import {
   ImageIcon,
   Bell,
   Award,
+  LogOut,
 } from "lucide-react"
 
 import {
@@ -34,6 +35,8 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
 interface AppSidebarProps {
   activeSection: string
@@ -106,6 +109,16 @@ const menuItems = [
 ]
 
 export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps) {
+  const router = useRouter()
+
+  const handleSignOut = () => {
+    // Clear the chef-token cookie
+    document.cookie = "chef-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict"
+    
+    // Redirect to login page
+    router.push("/login")
+  }
+
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="border-b p-4">
@@ -161,7 +174,7 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4">
+      <SidebarFooter className="border-t p-4 space-y-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src="/placeholder.svg" />
@@ -179,6 +192,16 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
             </div>
           </div>
         </div>
+        
+        <Button
+          onClick={handleSignOut}
+          variant="outline"
+          size="sm"
+          className="w-full justify-start text-muted-foreground hover:text-foreground"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
       </SidebarFooter>
     </Sidebar>
   )

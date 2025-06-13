@@ -1,0 +1,162 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secret
+  namespace: afri-plates
+type: Opaque
+data:
+  username: YWRtaW4=  # admin (base64 encoded)
+  password: cGFzc3dvcmQxMjM=  # password123 (base64 encoded)
+  database: YWZyaV9wbGF0ZXM=  # afri_plates (base64 encoded)
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+  namespace: afri-plates
+data:
+  mongo-init.js: |
+    db = db.getSiblingDB('afri_plates');
+    
+    // Create collections
+    db.createCollection('recipes');
+    db.createCollection('users');
+    db.createCollection('chefs');
+    db.createCollection('reviews');
+    db.createCollection('media');
+    db.createCollection('regions');
+    db.createCollection('notifications');
+    db.createCollection('analytics');
+    
+    // Create indexes for better performance
+    db.recipes.createIndex({ "name": "text", "description": "text" });
+    db.recipes.createIndex({ "chefId": 1 });
+    db.recipes.createIndex({ "tags.region": 1 });
+    db.recipes.createIndex({ "tags.tribe": 1 });
+    db.recipes.createIndex({ "status": 1 });
+    db.recipes.createIndex({ "createdAt": -1 });
+    
+    db.users.createIndex({ "clerkId": 1 }, { unique: true });
+    db.users.createIndex({ "email": 1 }, { unique: true });
+    
+    db.chefs.createIndex({ "clerkId": 1 }, { unique: true });
+    db.chefs.createIndex({ "email": 1 }, { unique: true });
+    db.chefs.createIndex({ "verificationStatus": 1 });
+    
+    db.reviews.createIndex({ "recipeId": 1 });
+    db.reviews.createIndex({ "userId": 1 });
+    db.reviews.createIndex({ "status": 1 });
+    
+    print('Database initialized successfully');
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+  namespace: afri-plates
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: afri-plates
+  labels:
+    app: mongodb
+    component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        component: database
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:7.0
+        ports:
+        - containerPort: 27017
+          name: mongodb
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: username
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: password
+        - name: MONGO_INITDB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: database
+        volumeMounts:
+        - name: mongodb-storage
+          mountPath: /data/db
+        - name: mongodb-init
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: mongodb-storage
+        persistentVolumeClaim:
+          claimName: mongodb-pvc
+      - name: mongodb-init
+        configMap:
+          name: mongodb-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: afri-plates
+  labels:
+    app: mongodb
+    component: database
+spec:
+  type: ClusterIP
+  ports:
+  - port: 27017
+    targetPort: 27017
+    protocol: TCP
+    name: mongodb
+  selector:
+    app: mongodb 

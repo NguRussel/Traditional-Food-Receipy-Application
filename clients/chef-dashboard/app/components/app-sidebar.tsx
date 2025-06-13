@@ -17,6 +17,7 @@ import {
   ChefHat,
   CheckCircle,
   Crown,
+  LogOut,
 } from "lucide-react"
 
 interface AppSidebarProps {
@@ -61,6 +62,13 @@ export function AppSidebar({
     },
   ]
 
+  const handleSignOut = () => {
+    // a mock sign out function
+    // remove the auth cookie and redirect to login
+    document.cookie = "chef-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    window.location.href = "/login"
+  }
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -88,7 +96,7 @@ export function AppSidebar({
         </nav>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
             <UserCircle className="h-6 w-6 text-muted-foreground" />
           </div>
@@ -106,6 +114,10 @@ export function AppSidebar({
             </div>
           </div>
         </div>
+        <Button variant="outline" className="w-full justify-center gap-2" onClick={handleSignOut}>
+          <LogOut className="h-4 w-4" />
+          <span>Sign Out</span>
+        </Button>
       </SidebarFooter>
     </Sidebar>
   )

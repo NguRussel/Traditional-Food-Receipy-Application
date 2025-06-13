@@ -1,0 +1,385 @@
+---
+- name: Deploy AFRI-PLATES Application
+  hosts: all
+  become: yes
+  vars:
+    app_name: afri-plates
+    app_version: "{{ version | default('latest') }}"
+    environment: "{{ env | default('production') }}"
+    docker_registry: "your-registry.com"
+    app_user: "{{ ansible_user }}"
+    app_dir: "/opt/{{ app_name }}"
+    
+  tasks:
+    - name: Create application user
+      user:
+        name: "{{ app_user }}"
+        system: yes
+        shell: /bin/bash
+        home: "{{ app_dir }}"
+        create_home: yes
+
+    - name: Create application directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+      loop:
+        - "{{ app_dir }}"
+        - "{{ app_dir }}/config"
+        - "{{ app_dir }}/logs"
+        - "{{ app_dir }}/data"
+        - "{{ app_dir }}/ssl"
+        - "{{ app_dir }}/backups"
+
+    - name: Copy Docker Compose configuration
+      template:
+        src: docker-compose.prod.yml.j2
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+      notify: restart application
+
+    - name: Copy environment configuration
+      template:
+        src: .env.j2
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0600'
+      notify: restart application
+
+    - name: Copy Nginx configuration
+      template:
+        src: nginx.conf.j2
+        dest: "{{ app_dir }}/config/nginx.conf"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+      notify: reload nginx
+
+    - name: Copy Prometheus configuration
+      template:
+        src: prometheus.yml.j2
+        dest: "{{ app_dir }}/config/prometheus.yml"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+      notify: restart prometheus
+
+    - name: Copy Grafana configuration
+      template:
+        src: grafana.ini.j2
+        dest: "{{ app_dir }}/config/grafana.ini"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+      notify: restart grafana
+
+    - name: Login to Docker registry
+      docker_login:
+        registry: "{{ docker_registry }}"
+        username: "{{ docker_registry_username }}"
+        password: "{{ docker_registry_password }}"
+      when: docker_registry_username is defined
+
+    - name: Pull latest Docker images
+      docker_image:
+        name: "{{ docker_registry }}/{{ app_name }}-{{ item }}:{{ app_version }}"
+        source: pull
+        force_source: yes
+      loop:
+        - api-gateway
+        - user-service
+        - recipe-service
+        - chef-service
+        - review-service
+        - media-service
+        - recommendation-service
+        - regional-service
+        - notification-service
+        - scanner-service
+        - ai-assistant-service
+        - analytics-service
+        - admin-service
+
+    - name: Stop existing application
+      docker_compose:
+        project_src: "{{ app_dir }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Start application services
+      docker_compose:
+        project_src: "{{ app_dir }}"
+        state: present
+        pull: yes
+        recreate: always
+      register: compose_result
+
+    - name: Wait for services to be healthy
+      uri:
+        url: "http://localhost:8000/health"
+        method: GET
+        status_code: 200
+      retries: 30
+      delay: 10
+      register: health_check
+      until: health_check.status == 200
+
+    - name: Verify all services are running
+      docker_container_info:
+        name: "{{ app_name }}-{{ item }}"
+      register: container_info
+      loop:
+        - api-gateway
+        - user-service
+        - recipe-service
+        - chef-service
+        - mongodb
+        - redis
+      failed_when: container_info.container.State.Status != "running"
+
+    - name: Create systemd service for application
+      template:
+        src: afri-plates.service.j2
+        dest: /etc/systemd/system/afri-plates.service
+        mode: '0644'
+      notify:
+        - reload systemd
+        - enable afri-plates service
+
+    - name: Configure log rotation for application
+      template:
+        src: afri-plates-logrotate.j2
+        dest: /etc/logrotate.d/afri-plates
+        mode: '0644'
+
+    - name: Setup application monitoring
+      block:
+        - name: Create monitoring script
+          template:
+            src: monitor-app.sh.j2
+            dest: "{{ app_dir }}/monitor-app.sh"
+            owner: "{{ app_user }}"
+            group: "{{ app_user }}"
+            mode: '0755'
+
+        - name: Setup monitoring cron job
+          cron:
+            name: "{{ app_name }} monitoring"
+            minute: "*/5"
+            job: "{{ app_dir }}/monitor-app.sh >> {{ app_dir }}/logs/monitoring.log 2>&1"
+            user: "{{ app_user }}"
+
+    - name: Configure SSL certificates
+      block:
+        - name: Check if SSL certificates exist
+          stat:
+            path: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
+          register: ssl_cert
+
+        - name: Generate SSL certificates
+          command: >
+            certbot certonly --nginx
+            --email {{ ssl_email }}
+            --agree-tos
+            --no-eff-email
+            -d {{ domain_name }}
+            -d api.{{ domain_name }}
+            -d chef.{{ domain_name }}
+            -d admin.{{ domain_name }}
+          when: not ssl_cert.stat.exists and domain_name is defined
+
+        - name: Setup SSL renewal cron job
+          cron:
+            name: "SSL certificate renewal"
+            minute: "0"
+            hour: "12"
+            job: "/usr/bin/certbot renew --quiet && systemctl reload nginx"
+            user: root
+          when: domain_name is defined
+
+    - name: Configure backup strategy
+      block:
+        - name: Create backup script
+          template:
+            src: backup-app.sh.j2
+            dest: "{{ app_dir }}/backup-app.sh"
+            owner: "{{ app_user }}"
+            group: "{{ app_user }}"
+            mode: '0755'
+
+        - name: Setup backup cron job
+          cron:
+            name: "{{ app_name }} backup"
+            minute: "0"
+            hour: "2"
+            job: "{{ app_dir }}/backup-app.sh >> {{ app_dir }}/logs/backup.log 2>&1"
+            user: "{{ app_user }}"
+
+    - name: Configure security settings
+      block:
+        - name: Update fail2ban configuration for application
+          blockinfile:
+            path: /etc/fail2ban/jail.local
+            block: |
+              [{{ app_name }}-auth]
+              enabled = true
+              port = http,https
+              filter = {{ app_name }}-auth
+              logpath = {{ app_dir }}/logs/access.log
+              maxretry = 5
+              bantime = 3600
+          notify: restart fail2ban
+
+        - name: Create fail2ban filter for application
+          copy:
+            content: |
+              [Definition]
+              failregex = ^<HOST> - - \[.*\] "(GET|POST|PUT|DELETE) .* HTTP/.*" (401|403) .*$
+              ignoreregex =
+            dest: /etc/fail2ban/filter.d/{{ app_name }}-auth.conf
+            mode: '0644'
+          notify: restart fail2ban
+
+    - name: Setup application health checks
+      block:
+        - name: Create health check script
+          template:
+            src: health-check.sh.j2
+            dest: "{{ app_dir }}/health-check.sh"
+            owner: "{{ app_user }}"
+            group: "{{ app_user }}"
+            mode: '0755'
+
+        - name: Setup health check cron job
+          cron:
+            name: "{{ app_name }} health check"
+            minute: "*/2"
+            job: "{{ app_dir }}/health-check.sh"
+            user: "{{ app_user }}"
+
+    - name: Configure application metrics
+      block:
+        - name: Ensure Prometheus can scrape application metrics
+          uri:
+            url: "http://localhost:8000/metrics"
+            method: GET
+            status_code: 200
+          register: metrics_check
+          retries: 5
+          delay: 5
+
+        - name: Configure Grafana dashboards
+          uri:
+            url: "http://localhost:3001/api/dashboards/db"
+            method: POST
+            user: admin
+            password: "{{ grafana_admin_password | default('admin123') }}"
+            body_format: json
+            body:
+              dashboard:
+                title: "AFRI-PLATES Application Dashboard"
+                tags: ["afri-plates", "application"]
+                panels: []
+              overwrite: true
+          ignore_errors: yes
+
+    - name: Verify deployment
+      block:
+        - name: Check API Gateway health
+          uri:
+            url: "http://localhost:8000/health"
+            method: GET
+            status_code: 200
+          register: api_health
+
+        - name: Check database connectivity
+          uri:
+            url: "http://localhost:8000/api/v1/status"
+            method: GET
+            status_code: 200
+          register: db_health
+
+        - name: Check all microservices
+          uri:
+            url: "http://localhost:{{ item }}/health"
+            method: GET
+            status_code: 200
+          loop:
+            - 8001  # recipe-service
+            - 8002  # user-service
+            - 8003  # chef-service
+            - 8004  # review-service
+          register: services_health
+
+        - name: Display deployment status
+          debug:
+            msg: |
+              Deployment Status:
+              - API Gateway: {{ 'OK' if api_health.status == 200 else 'FAILED' }}
+              - Database: {{ 'OK' if db_health.status == 200 else 'FAILED' }}
+              - Services: {{ 'OK' if services_health.results | selectattr('status', 'equalto', 200) | list | length == 4 else 'FAILED' }}
+              - Version: {{ app_version }}
+              - Environment: {{ environment }}
+
+    - name: Send deployment notification
+      uri:
+        url: "{{ slack_webhook_url }}"
+        method: POST
+        body_format: json
+        body:
+          text: |
+            🚀 AFRI-PLATES Deployment Completed
+            
+            Environment: {{ environment }}
+            Version: {{ app_version }}
+            Host: {{ inventory_hostname }}
+            Status: {{ 'SUCCESS' if api_health.status == 200 else 'FAILED' }}
+            
+            Services Status:
+            - API Gateway: {{ 'OK' if api_health.status == 200 else 'FAILED' }}
+            - Database: {{ 'OK' if db_health.status == 200 else 'FAILED' }}
+            - Microservices: {{ 'OK' if services_health.results | selectattr('status', 'equalto', 200) | list | length == 4 else 'FAILED' }}
+      when: slack_webhook_url is defined
+      ignore_errors: yes
+
+  handlers:
+    - name: restart application
+      docker_compose:
+        project_src: "{{ app_dir }}"
+        restarted: yes
+
+    - name: reload nginx
+      docker_container:
+        name: "{{ app_name }}-nginx"
+        restart: yes
+
+    - name: restart prometheus
+      docker_container:
+        name: "{{ app_name }}-prometheus"
+        restart: yes
+
+    - name: restart grafana
+      docker_container:
+        name: "{{ app_name }}-grafana"
+        restart: yes
+
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: enable afri-plates service
+      systemd:
+        name: afri-plates
+        enabled: yes
+        state: started
+
+    - name: restart fail2ban
+      systemd:
+        name: fail2ban
+        state: restarted 
